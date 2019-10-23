@@ -66,20 +66,9 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 
     json j = json::parse(i, nullptr, false);
 	// do some stuff
-
     LoadInformationFromJson(j);
 
     /*
-    {
-    LoadInformationFromJson(json);
-        {
-         LoadInformationAboutShipFromJson(json["ship"]);
-         LoadInformationAboutTargetPointFromJson(json["targetPoints"]);
-         LoadInformationAboutBoxFromJson(json["boxes"]);
-        }   
-
-    }
-
     while(!boxes.empty())
     {
     
