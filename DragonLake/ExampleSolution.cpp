@@ -129,7 +129,7 @@ void IvannaBaglayPathFinder::LoadInformationAboutBoxFromJson(json& j)
     for (json::iterator it = j.begin(); it != j.end(); it++)
     {
         boxes.push_back(box((*it)["boxId"], (*it)["half_x"], (*it)["half_y"], (*it)["half_z"],
-            (*it)["weight"], (*it)["targetPointId"]));
+                            (*it)["weight"], (*it)["targetPointId"]));
 
     }
 }
@@ -137,7 +137,8 @@ void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
 {
     for (json::iterator it = j.begin(); it != j.end(); it++)
     {
-        std::cout << *it << std::endl;
+        targetPoints.push_back(targetPoint((*it)["pointId"],
+                                            (*it)["x"], (*it)["y"], (*it)["z"]));
     }
 }
 
