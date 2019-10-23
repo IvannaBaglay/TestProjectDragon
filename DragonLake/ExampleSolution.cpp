@@ -9,16 +9,20 @@ using json = nlohmann::json;
 
 struct box
 {
-	int id;
-	int x, y, z;
-	float w;
-	int target;
+    box(int id, int x, int y, int z, float w, int target) :
+        id_(id), x_(x), y_(y), z_(z), w_(w), target_(target) {}
+	int id_;
+	int x_, y_, z_;
+	float w_;
+	int target_;
 };
 
 struct targetPoint
 {
-	int id;
-	float x, y, z;
+    targetPoint(int id, float x, float y, float z) :
+        id_(id), x_(x), y_(y), z_(z) {}
+	int id_;
+	float x_, y_, z_;
 };
 
 struct ship
@@ -124,7 +128,9 @@ void IvannaBaglayPathFinder::LoadInformationAboutBoxFromJson(json& j)
 {
     for (json::iterator it = j.begin(); it != j.end(); it++)
     {
-        std::cout << *it << std::endl;
+        boxes.push_back(box((*it)["boxId"], (*it)["half_x"], (*it)["half_y"], (*it)["half_z"],
+            (*it)["weight"], (*it)["targetPointId"]));
+
     }
 }
 void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
