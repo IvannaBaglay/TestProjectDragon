@@ -65,6 +65,10 @@ struct NewRoute
     /*
     constructor
     */
+    NewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute, std::pair<size_t, size_t> pairOfPoints)
+    {
+
+    }
     std::deque<size_t> PointsInRoute;
     float way;
     float weightOfShip;
@@ -169,6 +173,7 @@ public:
     void LoadInformationAboutSimpleRoutes();
     void FindShortestRoutes();
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
+    std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer);
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
     bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
@@ -184,6 +189,9 @@ public:
     bool CanBoxesBePacked(size_t firstPoint, size_t secondPoint);
     bool CanBoxesBePacked(size_t point, NewRoute route);
     bool CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute);
+
+    void UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer);
+
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
@@ -257,11 +265,10 @@ void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
 
 void IvannaBaglayPathFinder::FindShortestRoutes()
 {
-
     auto maxKilometerGrowth = FindMaxFromMatrixKilometerGrowth(); // return pair i j;
     if (AreAllConditionTrue(maxKilometerGrowth))
     {
-        //UniteSimpleRoute();
+        UniteSimpleRoute(maxKilometerGrowth);
     }
 }
 
@@ -321,31 +328,23 @@ bool IvannaBaglayPathFinder::AreAllConditionTrue(std::pair<size_t, size_t> pairO
         */
 
         //return HaveEnoughResources(pairOfPointer) && IsOverload(pairOfPointer) && CanBoxesBePacked(pairOfPointer);
-        auto itFirst = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
-            {
-                auto it = std::find(newRoute.PointsInRoute.cbegin(), newRoute.PointsInRoute.cend(), pairOfPointer.first);
-                return (it != newRoute.PointsInRoute.end()) ? true : false;
-            });
-        auto itSecond = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
-            {
-                auto it = std::find(newRoute.PointsInRoute.cbegin(), newRoute.PointsInRoute.cend(), pairOfPointer.second);
-                return (it != newRoute.PointsInRoute.end()) ? true : false;
-            });
-        if (itFirst == listOfNewRoutes.end() && itSecond == listOfNewRoutes.end())
+        auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPointer);
+        
+        if (pairOfNewRoute.first == listOfNewRoutes.end() && pairOfNewRoute.second == listOfNewRoutes.end())
         {
             return HaveEnoughResources(pairOfPointer.first, pairOfPointer.second) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
         }
-        else if (itFirst == listOfNewRoutes.end() && itSecond != listOfNewRoutes.end())
+        else if (pairOfNewRoute.first == listOfNewRoutes.end() && pairOfNewRoute.second != listOfNewRoutes.end())
         {
-            return HaveEnoughResources(pairOfPointer.first, pairOfPointer.second, *itSecond) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+            return HaveEnoughResources(pairOfPointer.first, pairOfPointer.second, *pairOfNewRoute.second) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
         }
-        else if (itFirst != listOfNewRoutes.end() && itSecond == listOfNewRoutes.end())
+        else if (pairOfNewRoute.first != listOfNewRoutes.end() && pairOfNewRoute.second == listOfNewRoutes.end())
         {
-            return HaveEnoughResources(pairOfPointer.second, pairOfPointer.first, *itFirst) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+            return HaveEnoughResources(pairOfPointer.second, pairOfPointer.first, *pairOfNewRoute.first) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
         }
         else
         {
-            return HaveEnoughResources(*itFirst, *itSecond, pairOfPointer.first, pairOfPointer.second) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+            return HaveEnoughResources(*pairOfNewRoute.first, *pairOfNewRoute.second, pairOfPointer.first, pairOfPointer.second) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
         }
     }
     return false;
@@ -408,7 +407,7 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(NewRoute firstRoute, NewRoute s
     float newRoute;
     if (pointInFirstRoute < pointInSecondRoute)
     {
-       newRoute = firstRoute.way - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInFirstRoute])[pointInSecondRoute];
+        newRoute = firstRoute.way - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInFirstRoute])[pointInSecondRoute];
     }
     else
     {
@@ -425,6 +424,28 @@ bool IvannaBaglayPathFinder::CanBoxesBePacked(size_t firstPoint, size_t secondPo
 {
     // ????????????????????
     return true;
+}
+
+std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> IvannaBaglayPathFinder::FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer)
+{
+    auto itFirst = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
+        {
+            auto it = std::find(newRoute.PointsInRoute.cbegin(), newRoute.PointsInRoute.cend(), pairOfPointer.first);
+            return (it != newRoute.PointsInRoute.end()) ? true : false;
+        });
+    auto itSecond = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
+        {
+            auto it = std::find(newRoute.PointsInRoute.cbegin(), newRoute.PointsInRoute.cend(), pairOfPointer.second);
+            return (it != newRoute.PointsInRoute.end()) ? true : false;
+        });
+    return std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> { itFirst, itSecond};
+}
+
+void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer)
+{
+    auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPointer);
+    listOfNewRoutes.push_back(NewRoute(pairOfPointer, pairOfNewRoute);
+
 }
 
 int main()
