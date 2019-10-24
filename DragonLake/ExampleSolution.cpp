@@ -3,10 +3,11 @@
 
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <iomanip>
-#include <memory>
+#include <vector>
+#include <list>
 #include <algorithm>
+#include <memory>
 
 #define USELESS -1
 
@@ -46,13 +47,21 @@ struct ship
         int half_y_;
         int half_z_;
     } maxCarryCapacity_;
+};
 
+struct SimpleRoute
+{
+    SimpleRoute(int i, std::vector<box> boxes, targetPoint targetPoints):
+        pointsInSimpleRoute_(i), boxes_(boxes), pointIdInFileJson_(targetPoints.id_), isEndOrStartPointInRoute_(true) {}
 
+    int pointsInSimpleRoute_;
+    int pointIdInFileJson_;
+    bool isEndOrStartPointInRoute_;
+    std::vector<box> boxes_;
 };
 
 class Matrix
 {
-    
 public:
     Matrix() {}
     //TODO: Base point can be not first in json file and problem that we don't have base point
@@ -107,26 +116,6 @@ private:
     size_t row_ = 0;
 };
 
-/*class MatrixOfKilometerGrowth: public Matrix
-{
-public:
-    MatrixOfKilometerGrowth(){}
-    
-private:
-
-protected:
-
-};
-
-class MatrixOfDistanceBetweenPoints : public Matrix
-{
-public:
-    MatrixOfDistanceBetweenPoints(){}
-private:
-
-protected:
-};*/
-
 struct IvannaBaglayPathFinder : public IGalaxyPathFinder
 {
 private:
@@ -136,6 +125,7 @@ private:
 
     Matrix matrixOfKilometerBetweenPoints_;
     Matrix matrixOfKilometerGrowth_;
+    std::list<SimpleRoute> listOfSimpleRoutes;
 public:
 	virtual void FindSolution(const char* inputJasonFile, const char* outputFileName);
 	virtual const char* ShowCaptainName() { return "Ivanna Baglay"; }
@@ -144,8 +134,9 @@ public:
     void LoadInformationAboutShipFromJson(json& j);
     void LoadInformationAboutTargetPointFromJson(json& j);
     void LoadInformationAboutBoxFromJson(json& j);
-    void FindShortestRoutes();
     void CreateMatrixForAlgorithm();
+    void LoadInformationAboutSimpleRoutes();
+    void FindShortestRoutes();
 
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
 };
@@ -159,7 +150,7 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 	// do some stuff
     LoadInformationFromJson(j);
     CreateMatrixForAlgorithm();
-
+    LoadInformationAboutSimpleRoutes();
 
     FindShortestRoutes();
     /*
@@ -249,13 +240,25 @@ void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
 
 }
 
+void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
+{
+    std::vector<box> boxesForCurrentPoint;
+    for (size_t i = 1; i < targetPoints_.size(); i++)
+    {
+        int currentPoint = targetPoints_[i].id_;
+        copy_if(boxes_.begin(), boxes_.end(), back_inserter(boxesForCurrentPoint), [currentPoint](box b) { return b.target_ == currentPoint; });
+        listOfSimpleRoutes.push_back(SimpleRoute(i, boxesForCurrentPoint, targetPoints_[i]));
+        boxesForCurrentPoint.clear();
+    }
+}
+
 std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrowth()
 {
     size_t rowMatrix = matrixOfKilometerGrowth_.get_row();
-    auto matrixPtr = matrixOfKilometerGrowth_.get_matrix_ptr();
-    float maxValue = -1;
     size_t maxj = 0;
-    size_t maxi = 0;
+    size_t maxi = 0;  
+    float maxValue = -1;
+    auto matrixPtr = matrixOfKilometerGrowth_.get_matrix_ptr();
     for (size_t i = 0; i < rowMatrix ; i++)
     {
         for (size_t j = 0; j <= i; j++)
