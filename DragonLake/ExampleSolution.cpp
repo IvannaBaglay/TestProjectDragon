@@ -56,11 +56,11 @@ public:
     void CreateMartix(size_t sizeMatrix) 
     {
         matrixPtr_ = std::make_shared<ptr_to_matrix>();
-        for (int i = 0; i < sizeMatrix; i++)
+        for (size_t i = 0; i < sizeMatrix; i++)
         {
             (*matrixPtr_).push_back(std::make_unique<std::vector<float>>());
             row_++;
-            for (int j = 0; j <= i; j++)
+            for (size_t j = 0; j <= i; j++)
             {
                 (*(*matrixPtr_)[i]).push_back(1);
                 sizeMatrix_++;
@@ -69,9 +69,9 @@ public:
     }
     void FitMatrix(std::vector<targetPoint>& targetPoints)
     {
-        for (int i = 0; i < row_; i++)
+        for (size_t i = 0; i < row_; i++)
         {
-            for (int j = 0; j <= i; j++)
+            for (size_t j = 0; j <= i; j++)
             {
                 (*(*matrixPtr_)[i])[j] = sqrt((targetPoints[i].x_ - targetPoints[j].x_) * (targetPoints[i].x_ - targetPoints[j].x_) +
                                                 (targetPoints[i].y_ - targetPoints[j].y_) * (targetPoints[i].y_ - targetPoints[j].y_) +
@@ -81,15 +81,15 @@ public:
     }
     void FitMatrix(Matrix& matrix)
     {
-        for (int i = 0; i < row_; i++)
+        for (size_t i = 0; i < row_; i++)
         {
-            for (int j = 0; j <= i; j++)
+            for (size_t j = 0; j <= i; j++)
             {
                 (*(*matrixPtr_)[i])[j] = (*(*matrix.matrixPtr_)[i])[0] + (*(*matrix.matrixPtr_)[j])[0] - (*(*matrix.matrixPtr_)[i])[j];
             }
         }
     }
-    const size_t get_raw() const
+    const size_t get_row() const
     {
         return row_;
     }
@@ -248,14 +248,14 @@ void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
 
 std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrowth()
 {
-    size_t rowMatrix = matrixOfKilometerGrowth_.get_raw();
+    size_t rowMatrix = matrixOfKilometerGrowth_.get_row();
     auto matrixPtr = matrixOfKilometerGrowth_.get_matrix_ptr();
     float maxValue = 0;
     size_t maxj = 0;
     size_t maxi = 0;
-    for (int i = 0; i < rowMatrix ; i++)
+    for (size_t i = 0; i < rowMatrix ; i++)
     {
-        for (int j = 0; j <= i; j++)
+        for (size_t j = 0; j <= i; j++)
         {
             if ((*(*matrixPtr)[i])[j] > maxValue)
             {
