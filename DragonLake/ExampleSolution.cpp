@@ -405,7 +405,15 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(NewRoute firstRoute, NewRoute s
 {
     auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
     // ?????????????
-    float newRoute = firstRoute.way - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way - (*(*matrixPtr)[pointInSecondRoute])[0];
+    float newRoute;
+    if (pointInFirstRoute < pointInSecondRoute)
+    {
+       newRoute = firstRoute.way - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInFirstRoute])[pointInSecondRoute];
+    }
+    else
+    {
+        newRoute = firstRoute.way - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInSecondRoute])[pointInFirstRoute];
+    }
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
 }
 
