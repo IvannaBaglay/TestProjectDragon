@@ -6,8 +6,12 @@
 #include <vector>
 #include <iomanip>
 #include <memory>
+#include <algorithm>
+
 using json = nlohmann::json;
 typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
+// If Sij was used then I write on this plase -1;
+
 struct box
 {
     box(int id, int x, int y, int z, float w, int target) :
@@ -48,28 +52,28 @@ class Matrix
     
 public:
     Matrix() {}
-    //TODO: Base point can be not firts in json file and problem that we don't have base point
+    //TODO: Base point can be not first in json file and problem that we don't have base point
     void CreateMartix(size_t sizeMatrix) 
     {
-        matrix_ptr_ = std::make_shared<ptr_to_matrix>();
+        matrixPtr_ = std::make_shared<ptr_to_matrix>();
         for (int i = 0; i < sizeMatrix; i++)
         {
-            (*matrix_ptr_).push_back(std::make_unique<std::vector<float>>());
-            raw_++;
+            (*matrixPtr_).push_back(std::make_unique<std::vector<float>>());
+            row_++;
             for (int j = 0; j <= i; j++)
             {
-                (*(*matrix_ptr_)[i]).push_back(1);
+                (*(*matrixPtr_)[i]).push_back(1);
                 sizeMatrix_++;
             }
         }
     }
     void FitMatrix(std::vector<targetPoint>& targetPoints)
     {
-        for (int i = 0; i < raw_; i++)
+        for (int i = 0; i < row_; i++)
         {
             for (int j = 0; j <= i; j++)
             {
-                (*(*matrix_ptr_)[i])[j] = sqrt((targetPoints[i].x_ - targetPoints[j].x_) * (targetPoints[i].x_ - targetPoints[j].x_) +
+                (*(*matrixPtr_)[i])[j] = sqrt((targetPoints[i].x_ - targetPoints[j].x_) * (targetPoints[i].x_ - targetPoints[j].x_) +
                                                 (targetPoints[i].y_ - targetPoints[j].y_) * (targetPoints[i].y_ - targetPoints[j].y_) +
                                                  (targetPoints[i].z_ - targetPoints[j].z_) * (targetPoints[i].z_ - targetPoints[j].z_));
             }
@@ -77,19 +81,27 @@ public:
     }
     void FitMatrix(Matrix& matrix)
     {
-        for (int i = 0; i < raw_; i++)
+        for (int i = 0; i < row_; i++)
         {
             for (int j = 0; j <= i; j++)
             {
-                (*(*matrix_ptr_)[i])[j] = (*(*matrix.matrix_ptr_)[i])[0] + (*(*matrix.matrix_ptr_)[j])[0] - (*(*matrix.matrix_ptr_)[i])[j];
+                (*(*matrixPtr_)[i])[j] = (*(*matrix.matrixPtr_)[i])[0] + (*(*matrix.matrixPtr_)[j])[0] - (*(*matrix.matrixPtr_)[i])[j];
             }
         }
     }
+    const size_t get_raw() const
+    {
+        return row_;
+    }
+    const auto get_matrix_ptr() const
+    {
+        return matrixPtr_;
+    }
 protected:
-    std::shared_ptr <ptr_to_matrix> matrix_ptr_;
+    std::shared_ptr <ptr_to_matrix> matrixPtr_;
 private:    
     size_t sizeMatrix_ = 0;
-    size_t raw_ = 0;
+    size_t row_ = 0;
 };
 
 /*class MatrixOfKilometerGrowth: public Matrix
@@ -131,6 +143,8 @@ public:
     void LoadInformationAboutBoxFromJson(json& j);
     void FindShortestRoutes();
     void CreateMatrixForAlgorithm();
+
+    std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
@@ -143,6 +157,8 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
     LoadInformationFromJson(j);
     CreateMatrixForAlgorithm();
 
+
+    FindShortestRoutes();
     /*
     
     while(!boxes_.empty())
@@ -202,8 +218,10 @@ void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
 
 void IvannaBaglayPathFinder::FindShortestRoutes()
 {
+
+    auto maxKilometerGrowth = FindMaxFromMatrixKilometerGrowth(); // return pair i j;
+
     /* 
-            maxKilometerGrowth = FindMaxFromMatrixKilometerGrowth(); // return pair i j;
             
             CanBeNewRoute = FindNewOptimizedRoute(maxKilometerGrowth); // return pair vector route and kilometers
 
@@ -215,9 +233,7 @@ void IvannaBaglayPathFinder::FindShortestRoutes()
             {
                 UniteSimpleRoute();
             }
-                
-        
-        
+   
     */
 }
 
@@ -228,6 +244,29 @@ void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
     matrixOfKilometerBetweenPoints_.FitMatrix(targetPoints_);
     matrixOfKilometerGrowth_.FitMatrix(matrixOfKilometerBetweenPoints_);
 
+}
+
+std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrowth()
+{
+    size_t rowMatrix = matrixOfKilometerGrowth_.get_raw();
+    auto matrixPtr = matrixOfKilometerGrowth_.get_matrix_ptr();
+    float maxValue = 0;
+    size_t maxj = 0;
+    size_t maxi = 0;
+    for (int i = 0; i < rowMatrix ; i++)
+    {
+        for (int j = 0; j <= i; j++)
+        {
+            if ((*(*matrixPtr)[i])[j] > maxValue)
+            {
+                maxValue = (*(*matrixPtr)[i])[j];
+                maxi = i;
+                maxj = j;
+            }
+        }
+       
+    }
+    return std::pair<size_t, size_t>(maxj, maxj);
 }
 
 int main()
