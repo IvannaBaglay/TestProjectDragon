@@ -331,9 +331,17 @@ bool IvannaBaglayPathFinder::AreAllConditionTrue(std::pair<size_t, size_t> pairO
                 auto it = std::find(newRoute.PointsInRoute.cbegin(), newRoute.PointsInRoute.cend(), pairOfPointer.second);
                 return (it != newRoute.PointsInRoute.end()) ? true : false;
             });
-        if (itFirst != listOfNewRoutes.end() && itFirst != listOfNewRoutes.end())
+        if (itFirst == listOfNewRoutes.end() && itSecond == listOfNewRoutes.end())
         {
-            return (pairOfPointer.first, pairOfPointer.second) && IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second);
+            return HaveEnoughResources(pairOfPointer.first, pairOfPointer.second) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+        }
+        else if (itFirst == listOfNewRoutes.end() && itSecond != listOfNewRoutes.end())
+        {
+            //return HaveEnoughResources(pairOfPointer.first, itSecond) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+        }
+        else
+        {
+            //return HaveEnoughResources(itFirst, itSecond) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
         }
     }
     return false;
