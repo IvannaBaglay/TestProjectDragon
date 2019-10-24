@@ -58,11 +58,12 @@ public:
     void LoadInformationAboutTargetPointFromJson(json& j);
     void LoadInformationAboutBoxFromJson(json& j);
     void FindShortestRoutes();
+    void CreateMatrixForAlgorithm();
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
 {
-   
+    std::vector<targetPoint> shortestRoutes;
 	std::ifstream i(inputJasonFile);
 
     json j = json::parse(i, nullptr, false);
@@ -71,11 +72,12 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 
 
     /*
+    CreateMatrixForAlgorithm();
     while(!boxes_.empty())
     {
     
         shortestRoutes = FindShortestRoutes(targetPoints_);
-        DeliverBoxes();  // return string about shippedBoxes
+        DeliverBoxes(shortestRoutes);  // return string about shippedBoxes
                                 // like
     }
 
@@ -128,17 +130,26 @@ void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
 
 void IvannaBaglayPathFinder::FindShortestRoutes()
 {
-    /*
-    while()
-    {
-        CreateMatrixForAlgorithm();
-        FindNewOptimizedRoute();
-        CheckCondition();
-        UniteSimpleRoute();
+    /* 
+            maxKilometerGrowth = FindMaxFromMatrixKilometerGrowth(); // return pair i j;
+            
+            CanBeNewRoute = FindNewOptimizedRoute(maxKilometerGrowth); // return pair vector route and kilometers
 
-    }
+            //TODO: 
+            How present set route?
+            How unite set with point? 
+
+            if(CheckCondition(NewRoute))
+            {
+                UniteSimpleRoute();
+            }
+                
+        
+        
     */
 }
+
+
 
 int main()
 {
