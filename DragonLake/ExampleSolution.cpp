@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <memory>
 using json = nlohmann::json;
-
+typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
 struct box
 {
     box(int id, int x, int y, int z, float w, int target) :
@@ -43,31 +43,76 @@ struct ship
 
 };
 
-class MatrixOfKilometerGrowth
+class Matrix
 {
-    typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
+    
 public:
-    MatrixOfKilometerGrowth() 
+    Matrix()
     {
 
     }
-    void CreateMartixOfKilometerGrowth(size_t sizeMatrix) 
+    void CreateMartix(size_t sizeMatrix) 
     {
-        matrix_ = std::make_unique<ptr_to_matrix>();
-        for (int i = 0; i != sizeMatrix; i++)
+        matrix_ptr_ = std::make_shared<ptr_to_matrix>();
+        for (int i = 0; i < sizeMatrix; i++)
         {
-            (*matrix_).push_back(std::make_unique<std::vector<float>>());
-            for (int j = 0; j != i; j++)
+            (*matrix_ptr_).push_back(std::make_unique<std::vector<float>>());
+            raw_++;
+            for (int j = 0; j <= i; j++)
             {
-                (*(*matrix_)[i]).push_back(1);
+                (*(*matrix_ptr_)[i]).push_back(1);
+                sizeMatrix_++;
+            }
+        }
+    }
+    void FitMatrix(std::vector<targetPoint>& targetPoints)
+    {
+        for (int i = 0; i < raw_; i++)
+        {
+            for (int j = 0; j <= i; j++)
+            {
+                (*(*matrix_ptr_)[i])[j] = sqrt((targetPoints[i].x_ - targetPoints[j].x_) * (targetPoints[i].x_ - targetPoints[j].x_) +
+                                                (targetPoints[i].y_ - targetPoints[j].y_) * (targetPoints[i].y_ - targetPoints[j].y_) +
+                                                 (targetPoints[i].z_ - targetPoints[j].z_) * (targetPoints[i].z_ - targetPoints[j].z_));
+            }
+        }
+    }
+    void FitMatrix(Matrix& matrix)
+    {
+        for (int i = 0; i < raw_; i++)
+        {
+            for (int j = 0; j < i; j++)
+            {
+                (*(*matrix_ptr_)[i])[j] = (*(*matrix_ptr_)[i])[0] + (*(*matrix_ptr_)[j])[0] - +(*(*matrix_ptr_)[i])[j];
             }
         }
     }
 protected:
-
+    std::shared_ptr <ptr_to_matrix> matrix_ptr_;
 private:    
-    std::unique_ptr <ptr_to_matrix> matrix_;
+    size_t sizeMatrix_ = 0;
+    size_t raw_ = 0;
 };
+
+/*class MatrixOfKilometerGrowth: public Matrix
+{
+public:
+    MatrixOfKilometerGrowth(){}
+    
+private:
+
+protected:
+
+};
+
+class MatrixOfDistanceBetweenPoints : public Matrix
+{
+public:
+    MatrixOfDistanceBetweenPoints(){}
+private:
+
+protected:
+};*/
 
 struct IvannaBaglayPathFinder : public IGalaxyPathFinder
 {
@@ -76,7 +121,8 @@ private:
 	std::vector<targetPoint> targetPoints_;
 	ship myship_;
 
-    MatrixOfKilometerGrowth MatrixOfKilometerGrowth_;
+    Matrix matrixOfKilometerBetweenPoints_;
+    Matrix matrixOfKilometerGrowth_;
 public:
 	virtual void FindSolution(const char* inputJasonFile, const char* outputFileName);
 	virtual const char* ShowCaptainName() { return "Ivanna Baglay"; }
@@ -179,7 +225,10 @@ void IvannaBaglayPathFinder::FindShortestRoutes()
 
 void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
 {
-    MatrixOfKilometerGrowth_.CreateMartixOfKilometerGrowth(targetPoints_.size());
+    matrixOfKilometerBetweenPoints_.CreateMartix(targetPoints_.size());
+    matrixOfKilometerBetweenPoints_.FitMatrix(targetPoints_);
+    matrixOfKilometerGrowth_.CreateMartix(targetPoints_.size());
+    matrixOfKilometerGrowth_.FitMatrix(matrixOfKilometerBetweenPoints_);
 
 }
 
