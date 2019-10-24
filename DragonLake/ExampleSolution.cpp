@@ -83,7 +83,7 @@ public:
         {
             for (int j = 0; j < i; j++)
             {
-                (*(*matrix_ptr_)[i])[j] = (*(*matrix_ptr_)[i])[0] + (*(*matrix_ptr_)[j])[0] - +(*(*matrix_ptr_)[i])[j];
+                (*(*matrix_ptr_)[i])[j] = (*(*matrix.matrix_ptr_)[i])[0] + (*(*matrix.matrix_ptr_)[j])[0] - (*(*matrix.matrix_ptr_)[i])[j];
             }
         }
     }
