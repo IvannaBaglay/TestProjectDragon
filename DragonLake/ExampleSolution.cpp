@@ -137,8 +137,13 @@ public:
     void CreateMatrixForAlgorithm();
     void LoadInformationAboutSimpleRoutes();
     void FindShortestRoutes();
-
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
+    bool CheckCondition(std::pair<size_t, size_t> pairOfPointer);
+    bool AreEndOrStartPoints();
+    bool ArePointsInOneClass();
+    bool HaveEnoughResources();
+    bool IsOverload();
+    bool CanBoxesBePacked();
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
@@ -214,21 +219,10 @@ void IvannaBaglayPathFinder::FindShortestRoutes()
 {
 
     auto maxKilometerGrowth = FindMaxFromMatrixKilometerGrowth(); // return pair i j;
-
-    /* 
-            
-            CanBeNewRoute = FindNewOptimizedRoute(maxKilometerGrowth); // return pair vector route and kilometers
-
-            //TODO: 
-            How present set route?
-            How unite set with point? 
-
-            if(CheckCondition(NewRoute))
-            {
-                UniteSimpleRoute();
-            }
-   
-    */
+    if (CheckCondition(maxKilometerGrowth))
+    {
+        //UniteSimpleRoute();
+    }
 }
 
 void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
@@ -269,11 +263,36 @@ std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrow
                 maxi = i;
                 maxj = j;
             }
-        }
-       
+        }  
     }
     (*(*matrixPtr)[maxi])[maxj] = USELESS; // will not be used further
     return std::pair<size_t, size_t>(maxj, maxj);
+}
+
+bool IvannaBaglayPathFinder::CheckCondition(std::pair<size_t, size_t> pairOfPointer) 
+{
+    return AreEndOrStartPoints() && ArePointsInOneClass() && HaveEnoughResources() && IsOverload() && CanBoxesBePacked();
+}
+
+bool IvannaBaglayPathFinder::AreEndOrStartPoints()
+{
+    return true;
+}
+bool IvannaBaglayPathFinder::ArePointsInOneClass()
+{
+    return true;
+}
+bool IvannaBaglayPathFinder::HaveEnoughResources()
+{
+    return true;
+}
+bool IvannaBaglayPathFinder::IsOverload()
+{
+    return true;
+}
+bool IvannaBaglayPathFinder::CanBoxesBePacked()
+{
+    return true;
 }
 
 int main()
