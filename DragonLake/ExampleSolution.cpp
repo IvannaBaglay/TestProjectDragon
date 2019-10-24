@@ -174,8 +174,8 @@ public:
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
 
     bool HaveEnoughResources(size_t firstPoint, size_t secondPoint);
-    bool HaveEnoughResources(size_t point, NewRoute route);
-    bool HaveEnoughResources(NewRoute firstRoute, NewRoute secondRoute);
+    bool HaveEnoughResources(size_t firstPoint, size_t secondPoint, NewRoute route);
+    bool HaveEnoughResources(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
 
     bool IsOverload(size_t firstPoint, size_t secondPoint);
     bool IsOverload(size_t point, NewRoute route);
@@ -337,11 +337,15 @@ bool IvannaBaglayPathFinder::AreAllConditionTrue(std::pair<size_t, size_t> pairO
         }
         else if (itFirst == listOfNewRoutes.end() && itSecond != listOfNewRoutes.end())
         {
-            //return HaveEnoughResources(pairOfPointer.first, itSecond) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+            return HaveEnoughResources(pairOfPointer.first, pairOfPointer.second, *itSecond) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+        }
+        else if (itFirst != listOfNewRoutes.end() && itSecond == listOfNewRoutes.end())
+        {
+            return HaveEnoughResources(pairOfPointer.second, pairOfPointer.first, *itFirst) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
         }
         else
         {
-            //return HaveEnoughResources(itFirst, itSecond) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+            return HaveEnoughResources(*itFirst, *itSecond, pairOfPointer.first, pairOfPointer.second) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
         }
     }
     return false;
@@ -351,6 +355,7 @@ bool IvannaBaglayPathFinder::AreEndOrStartPoints(std::pair<size_t, size_t> pairO
 {
     return listOfSimpleRoutes[pairOfPointer.first].isEndOrStartPointInRoute_ && listOfSimpleRoutes[pairOfPointer.second].isEndOrStartPointInRoute_;
 }
+
 bool IvannaBaglayPathFinder::ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer)
 {
     for (size_t i = 0; i < listOfNewRoutes.size(); i++)
@@ -362,6 +367,7 @@ bool IvannaBaglayPathFinder::ArePointsInOneClass(std::pair<size_t, size_t> pairO
     }
     return false;
 }
+
 bool IvannaBaglayPathFinder::HaveEnoughResources(size_t firstPoint, size_t secondPoint)
 {
     auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
@@ -377,6 +383,32 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(size_t firstPoint, size_t secon
    
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
 }
+
+bool IvannaBaglayPathFinder::HaveEnoughResources(size_t point, size_t pointInRoute, NewRoute route)
+{
+    auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
+    // ?????????????
+    float newRoute;
+    if (point < pointInRoute)
+    {
+        newRoute = route.way - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[point])[pointInRoute];
+    }
+    else
+    {
+        newRoute = route.way - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[pointInRoute])[point];
+    }
+
+    return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
+}
+
+bool IvannaBaglayPathFinder::HaveEnoughResources(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
+{
+    auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
+    // ?????????????
+    float newRoute = firstRoute.way - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way - (*(*matrixPtr)[pointInSecondRoute])[0];
+    return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
+}
+
 bool IvannaBaglayPathFinder::IsOverload(size_t firstPoint, size_t secondPoint)
 {
     return true;
