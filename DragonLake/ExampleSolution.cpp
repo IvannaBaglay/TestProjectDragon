@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <vector>
-#include <list>
+#include <deque>
 #include <algorithm>
 #include <memory>
 
@@ -58,6 +58,24 @@ struct SimpleRoute
     int pointIdInFileJson_;
     bool isEndOrStartPointInRoute_;
     std::vector<box> boxes_;
+};
+
+struct NewRoute
+{
+    /*
+    constructor
+    */
+    std::deque<int> PointsInRoute;
+    float way;
+    float weightOfShip;
+    std::vector<box> boxesOfShip;
+    /*
+    function for checked pair in deque;
+    function for checked one part of pair 
+
+    added new point or new set to set
+
+    */
 };
 
 class Matrix
@@ -280,7 +298,9 @@ bool IvannaBaglayPathFinder::AreEndOrStartPoints(std::pair<size_t, size_t> pairO
 }
 bool IvannaBaglayPathFinder::ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer)
 {
-
+    /*
+    
+    */
     return true;
 }
 bool IvannaBaglayPathFinder::HaveEnoughResources(std::pair<size_t, size_t> pairOfPointer)
