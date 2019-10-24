@@ -8,7 +8,10 @@
 #include <memory>
 #include <algorithm>
 
+#define USELESS -1
+
 using json = nlohmann::json;
+
 typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
 // If Sij was used then I write on this plase -1;
 
@@ -250,7 +253,7 @@ std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrow
 {
     size_t rowMatrix = matrixOfKilometerGrowth_.get_row();
     auto matrixPtr = matrixOfKilometerGrowth_.get_matrix_ptr();
-    float maxValue = 0;
+    float maxValue = -1;
     size_t maxj = 0;
     size_t maxi = 0;
     for (size_t i = 0; i < rowMatrix ; i++)
@@ -266,6 +269,7 @@ std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrow
         }
        
     }
+    (*(*matrixPtr)[maxi])[maxj] = USELESS; // will not be used further
     return std::pair<size_t, size_t>(maxj, maxj);
 }
 
