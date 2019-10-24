@@ -27,17 +27,17 @@ struct targetPoint
 
 struct ship
 {
-    std::vector<box> boxes;
-	float maxFuelWeight;
-	float maxCarryingWeight;
-    float resourcesConsumption;
+    std::vector<box> boxes_;
+	float maxFuelWeight_;
+	float maxCarryingWeight_;
+    float resourcesConsumption_;
 
     struct maxCarryingCapacity
     {
-        int half_x;
-        int half_y;
-        int half_z;
-    } maxCarryCapacity;
+        int half_x_;
+        int half_y_;
+        int half_z_;
+    } maxCarryCapacity_;
 
 
 };
@@ -45,9 +45,9 @@ struct ship
 struct IvannaBaglayPathFinder : public IGalaxyPathFinder
 {
 private:
-	std::vector<box> boxes; // added only on base
-	std::vector<targetPoint> targetPoints;
-	ship myship;
+	std::vector<box> boxes_; // added only on base
+	std::vector<targetPoint> targetPoints_;
+	ship myship_;
 
 public:
 	virtual void FindSolution(const char* inputJasonFile, const char* outputFileName);
@@ -57,6 +57,7 @@ public:
     void LoadInformationAboutShipFromJson(json& j);
     void LoadInformationAboutTargetPointFromJson(json& j);
     void LoadInformationAboutBoxFromJson(json& j);
+    void FindShortestRoutes();
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
@@ -68,20 +69,14 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 	// do some stuff
     LoadInformationFromJson(j);
 
+
     /*
-    while(!boxes.empty())
+    while(!boxes_.empty())
     {
     
-        shortestRoutes = FindShortestRoutes(targetPoints);
-            
-            for (int i = 0; i ! = shortestRoutes.size(); i++)
-            {
-                myship.PackBoxes(boxes, shortestRoutes[i]);
-                DeliverBoxes();  // return string about shippedBoxes
+        shortestRoutes = FindShortestRoutes(targetPoints_);
+        DeliverBoxes();  // return string about shippedBoxes
                                 // like
-
-            }
-            
     }
 
     */
@@ -105,19 +100,19 @@ void IvannaBaglayPathFinder::LoadInformationFromJson(json& j)
 
 void IvannaBaglayPathFinder::LoadInformationAboutShipFromJson(json& j)
 {
-    myship.maxFuelWeight = j["maxResourcesWeight"];
-    myship.maxCarryingWeight = j["maxCarryingWeight"];
-    myship.resourcesConsumption = j["resourcesConsumption"];
+    myship_.maxFuelWeight_ = j["maxResourcesWeight"];
+    myship_.maxCarryingWeight_ = j["maxCarryingWeight"];
+    myship_.resourcesConsumption_ = j["resourcesConsumption"];
 
-    myship.maxCarryCapacity.half_x = j["maxCarryingCapacity"]["half_x"];
-    myship.maxCarryCapacity.half_y = j["maxCarryingCapacity"]["half_y"];
-    myship.maxCarryCapacity.half_z = j["maxCarryingCapacity"]["half_z"];
+    myship_.maxCarryCapacity_.half_x_ = j["maxCarryingCapacity"]["half_x"];
+    myship_.maxCarryCapacity_.half_y_ = j["maxCarryingCapacity"]["half_y"];
+    myship_.maxCarryCapacity_.half_z_ = j["maxCarryingCapacity"]["half_z"];
 }
 void IvannaBaglayPathFinder::LoadInformationAboutBoxFromJson(json& j)
 {
     for (json::iterator it = j.begin(); it != j.end(); it++)
     {
-        boxes.push_back(box((*it)["boxId"], (*it)["half_x"], (*it)["half_y"], (*it)["half_z"],
+        boxes_.push_back(box((*it)["boxId"], (*it)["half_x"], (*it)["half_y"], (*it)["half_z"],
                             (*it)["weight"], (*it)["targetPointId"]));
 
     }
@@ -126,9 +121,23 @@ void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
 {
     for (json::iterator it = j.begin(); it != j.end(); it++)
     {
-        targetPoints.push_back(targetPoint((*it)["pointId"],
+        targetPoints_.push_back(targetPoint((*it)["pointId"],
                                             (*it)["x"], (*it)["y"], (*it)["z"]));
     }
+}
+
+void IvannaBaglayPathFinder::FindShortestRoutes()
+{
+    /*
+    while()
+    {
+        CreateMatrixForAlgorithm();
+        FindNewOptimizedRoute();
+        CheckCondition();
+        UniteSimpleRoute();
+
+    }
+    */
 }
 
 int main()
