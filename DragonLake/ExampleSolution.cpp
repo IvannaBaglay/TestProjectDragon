@@ -47,10 +47,8 @@ class Matrix
 {
     
 public:
-    Matrix()
-    {
-
-    }
+    Matrix() {}
+    //TODO: Base point can be not firts in json file and problem that we don't have base point
     void CreateMartix(size_t sizeMatrix) 
     {
         matrix_ptr_ = std::make_shared<ptr_to_matrix>();
@@ -81,7 +79,7 @@ public:
     {
         for (int i = 0; i < raw_; i++)
         {
-            for (int j = 0; j < i; j++)
+            for (int j = 0; j <= i; j++)
             {
                 (*(*matrix_ptr_)[i])[j] = (*(*matrix.matrix_ptr_)[i])[0] + (*(*matrix.matrix_ptr_)[j])[0] - (*(*matrix.matrix_ptr_)[i])[j];
             }
@@ -226,8 +224,8 @@ void IvannaBaglayPathFinder::FindShortestRoutes()
 void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
 {
     matrixOfKilometerBetweenPoints_.CreateMartix(targetPoints_.size());
-    matrixOfKilometerBetweenPoints_.FitMatrix(targetPoints_);
     matrixOfKilometerGrowth_.CreateMartix(targetPoints_.size());
+    matrixOfKilometerBetweenPoints_.FitMatrix(targetPoints_);
     matrixOfKilometerGrowth_.FitMatrix(matrixOfKilometerBetweenPoints_);
 
 }
