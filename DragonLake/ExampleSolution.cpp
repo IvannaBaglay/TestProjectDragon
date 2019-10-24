@@ -125,7 +125,7 @@ private:
 
     Matrix matrixOfKilometerBetweenPoints_;
     Matrix matrixOfKilometerGrowth_;
-    std::list<SimpleRoute> listOfSimpleRoutes;
+    std::vector<SimpleRoute> listOfSimpleRoutes;
 public:
 	virtual void FindSolution(const char* inputJasonFile, const char* outputFileName);
 	virtual const char* ShowCaptainName() { return "Ivanna Baglay"; }
@@ -139,11 +139,11 @@ public:
     void FindShortestRoutes();
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     bool CheckCondition(std::pair<size_t, size_t> pairOfPointer);
-    bool AreEndOrStartPoints();
-    bool ArePointsInOneClass();
-    bool HaveEnoughResources();
-    bool IsOverload();
-    bool CanBoxesBePacked();
+    bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
+    bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
+    bool HaveEnoughResources(std::pair<size_t, size_t> pairOfPointer);
+    bool IsOverload(std::pair<size_t, size_t> pairOfPointer);
+    bool CanBoxesBePacked(std::pair<size_t, size_t> pairOfPointer);
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
@@ -271,26 +271,27 @@ std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrow
 
 bool IvannaBaglayPathFinder::CheckCondition(std::pair<size_t, size_t> pairOfPointer) 
 {
-    return AreEndOrStartPoints() && ArePointsInOneClass() && HaveEnoughResources() && IsOverload() && CanBoxesBePacked();
+    return AreEndOrStartPoints(pairOfPointer) && ArePointsInOneClass(pairOfPointer) && HaveEnoughResources(pairOfPointer) && IsOverload(pairOfPointer) && CanBoxesBePacked(pairOfPointer);
 }
 
-bool IvannaBaglayPathFinder::AreEndOrStartPoints()
+bool IvannaBaglayPathFinder::AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer)
+{
+    return listOfSimpleRoutes[pairOfPointer.first].isEndOrStartPointInRoute_ && listOfSimpleRoutes[pairOfPointer.second].isEndOrStartPointInRoute_;
+}
+bool IvannaBaglayPathFinder::ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer)
+{
+
+    return true;
+}
+bool IvannaBaglayPathFinder::HaveEnoughResources(std::pair<size_t, size_t> pairOfPointer)
+{
+    return false;
+}
+bool IvannaBaglayPathFinder::IsOverload(std::pair<size_t, size_t> pairOfPointer)
 {
     return true;
 }
-bool IvannaBaglayPathFinder::ArePointsInOneClass()
-{
-    return true;
-}
-bool IvannaBaglayPathFinder::HaveEnoughResources()
-{
-    return true;
-}
-bool IvannaBaglayPathFinder::IsOverload()
-{
-    return true;
-}
-bool IvannaBaglayPathFinder::CanBoxesBePacked()
+bool IvannaBaglayPathFinder::CanBoxesBePacked(std::pair<size_t, size_t> pairOfPointer)
 {
     return true;
 }
