@@ -65,24 +65,25 @@ struct NewRoute
     /*
     constructor
     */
-    NewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute, std::pair<size_t, size_t> pairOfPoints)
+    NewRoute(std::deque<size_t> route, float way, float weightOfShip = 0, std::vector<box> boxes = {}) :
+        pointsInRoute_(route), way_(way), weightOfShip_(weightOfShip), boxesOfShip_(boxes)
     {
 
     }
-    std::deque<size_t> PointsInRoute;
-    float way;
-    float weightOfShip;
-    std::vector<box> boxesOfShip;
+    std::deque<size_t> pointsInRoute_;
+    float way_;
+    float weightOfShip_;
+    std::vector<box> boxesOfShip_;
     bool ArePairOfPointsInRoute(std::pair<size_t, size_t> pairOfPoint)
     {
-        auto itFirst = std::find(PointsInRoute.cbegin(), PointsInRoute.cend(), pairOfPoint.first);
-        auto itSecond = std::find(PointsInRoute.cbegin(), PointsInRoute.cend(), pairOfPoint.second);
-        return (itFirst != PointsInRoute.end() && itSecond != PointsInRoute.end()) ? true : false;
+        auto itFirst = std::find(pointsInRoute_.cbegin(), pointsInRoute_.cend(), pairOfPoint.first);
+        auto itSecond = std::find(pointsInRoute_.cbegin(), pointsInRoute_.cend(), pairOfPoint.second);
+        return (itFirst != pointsInRoute_.end() && itSecond != pointsInRoute_.end()) ? true : false;
     }
     bool IsPointInRoute(size_t point)
     {
-        auto it = std::find(PointsInRoute.cbegin(), PointsInRoute.cend(), point);
-        return (it != PointsInRoute.end()) ? true : false;
+        auto it = std::find(pointsInRoute_.cbegin(), pointsInRoute_.cend(), point);
+        return (it != pointsInRoute_.end()) ? true : false;
     }
 
     /*
@@ -390,11 +391,11 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(size_t point, size_t pointInRou
     float newRoute;
     if (point < pointInRoute)
     {
-        newRoute = route.way - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[point])[pointInRoute];
+        newRoute = route.way_ - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[point])[pointInRoute];
     }
     else
     {
-        newRoute = route.way - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[pointInRoute])[point];
+        newRoute = route.way_ - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[pointInRoute])[point];
     }
 
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
@@ -403,15 +404,14 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(size_t point, size_t pointInRou
 bool IvannaBaglayPathFinder::HaveEnoughResources(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
 {
     auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
-    // ?????????????
     float newRoute;
     if (pointInFirstRoute < pointInSecondRoute)
     {
-        newRoute = firstRoute.way - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInFirstRoute])[pointInSecondRoute];
+        newRoute = firstRoute.way_ - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way_ - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInFirstRoute])[pointInSecondRoute];
     }
     else
     {
-        newRoute = firstRoute.way - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInSecondRoute])[pointInFirstRoute];
+        newRoute = firstRoute.way_ - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way_ - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInSecondRoute])[pointInFirstRoute];
     }
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
 }
@@ -430,21 +430,98 @@ std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_it
 {
     auto itFirst = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
         {
-            auto it = std::find(newRoute.PointsInRoute.cbegin(), newRoute.PointsInRoute.cend(), pairOfPointer.first);
-            return (it != newRoute.PointsInRoute.end()) ? true : false;
+            auto it = std::find(newRoute.pointsInRoute_.cbegin(), newRoute.pointsInRoute_.cend(), pairOfPointer.first);
+            return (it != newRoute.pointsInRoute_.end()) ? true : false;
         });
     auto itSecond = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
         {
-            auto it = std::find(newRoute.PointsInRoute.cbegin(), newRoute.PointsInRoute.cend(), pairOfPointer.second);
-            return (it != newRoute.PointsInRoute.end()) ? true : false;
+            auto it = std::find(newRoute.pointsInRoute_.cbegin(), newRoute.pointsInRoute_.cend(), pairOfPointer.second);
+            return (it != newRoute.pointsInRoute_.end()) ? true : false;
         });
     return std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> { itFirst, itSecond};
 }
 
 void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer)
 {
+    auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
     auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPointer);
-    listOfNewRoutes.push_back(NewRoute(pairOfPointer, pairOfNewRoute);
+    std::deque<size_t> OrderPointsInNewWay;
+    float newWay;
+    /*
+    checking iterators
+
+    */
+
+    /*
+    read information:
+        gives way in points vector
+        sum way
+
+        late : weight and boxes
+    */
+
+    if (pairOfNewRoute.first == listOfNewRoutes.end() && pairOfNewRoute.second == listOfNewRoutes.end())
+    {
+        // combine two points + push new route;
+        OrderPointsInNewWay.push_back(pairOfPointer.first);
+        OrderPointsInNewWay.push_back(pairOfPointer.second);
+        if (pairOfPointer.first < pairOfPointer.second)
+        {
+            newWay = (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second] + (*(*matrixPtr)[pairOfPointer.second])[0];
+        }
+        else
+        {
+            newWay = (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first] + (*(*matrixPtr)[pairOfPointer.second])[0];
+        }
+
+        listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));
+    }
+    else if (pairOfNewRoute.first != listOfNewRoutes.end() && pairOfNewRoute.second == listOfNewRoutes.end())
+    {
+        //  read information about first set and takes in constructor + point second 
+        // erase iterator first and push new;
+
+        OrderPointsInNewWay = pairOfNewRoute.first->pointsInRoute_;
+        (pairOfNewRoute.first->pointsInRoute_[0] == pairOfPointer.first) ? OrderPointsInNewWay.push_front(pairOfPointer.second) : OrderPointsInNewWay.push_back(pairOfPointer.second);
+
+        if (pairOfPointer.first < pairOfPointer.second)
+        {
+            newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
+
+        }
+        else
+        {
+            newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
+        }
+        listOfNewRoutes.erase(pairOfNewRoute.first);
+        listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));
+    } 
+    else if (pairOfNewRoute.first == listOfNewRoutes.end() && pairOfNewRoute.second != listOfNewRoutes.end())
+    {
+        //  read information about first set and takes in constructor + point first
+        // erase iterator second and push new;
+        OrderPointsInNewWay = pairOfNewRoute.second->pointsInRoute_;
+        (pairOfNewRoute.second->pointsInRoute_[0] == pairOfPointer.second) ? OrderPointsInNewWay.push_front(pairOfPointer.first) : OrderPointsInNewWay.push_back(pairOfPointer.first);
+
+        if (pairOfPointer.first < pairOfPointer.second)
+        {
+            newWay = pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
+
+        }
+        else
+        {
+            newWay = pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
+        }
+        listOfNewRoutes.erase(pairOfNewRoute.second);
+        listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));
+    }
+    else
+    {
+        //  read information about both set and takes in constructor
+        // erase both iterator and push new;
+
+    }
+
 
 }
 
