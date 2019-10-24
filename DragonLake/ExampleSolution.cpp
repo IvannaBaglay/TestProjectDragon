@@ -459,7 +459,7 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
 
         late : weight and boxes
     */
-
+    // TODO : refactoring separate code in simple function
     if (pairOfNewRoute.first == listOfNewRoutes.end() && pairOfNewRoute.second == listOfNewRoutes.end())
     {
         // combine two points + push new route;
@@ -474,7 +474,7 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
             newWay = (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first] + (*(*matrixPtr)[pairOfPointer.second])[0];
         }
 
-        listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));
+        
     }
     else if (pairOfNewRoute.first != listOfNewRoutes.end() && pairOfNewRoute.second == listOfNewRoutes.end())
     {
@@ -494,7 +494,7 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
             newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
         }
         listOfNewRoutes.erase(pairOfNewRoute.first);
-        listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));
+       
     } 
     else if (pairOfNewRoute.first == listOfNewRoutes.end() && pairOfNewRoute.second != listOfNewRoutes.end())
     {
@@ -513,15 +513,49 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
             newWay = pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
         }
         listOfNewRoutes.erase(pairOfNewRoute.second);
-        listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));
+        
     }
     else
     {
         //  read information about both set and takes in constructor
         // erase both iterator and push new;
-
+        
+        if (pairOfNewRoute.first->pointsInRoute_[0] == pairOfPointer.first)
+        {
+            auto it = pairOfNewRoute.first->pointsInRoute_.cbegin();
+            if (pairOfNewRoute.second->pointsInRoute_[0] == pairOfPointer.second)
+            {
+                OrderPointsInNewWay.insert(it, pairOfNewRoute.second->pointsInRoute_.begin(), pairOfNewRoute.second->pointsInRoute_.end());
+            }
+            else
+            {
+                OrderPointsInNewWay.insert(it, pairOfNewRoute.second->pointsInRoute_.rbegin(), pairOfNewRoute.second->pointsInRoute_.rend());
+            }
+        }
+        else
+        {
+            auto it = pairOfNewRoute.first->pointsInRoute_.end();
+            if (pairOfNewRoute.second->pointsInRoute_[0] == pairOfPointer.second)
+            {
+                OrderPointsInNewWay.insert(it, pairOfNewRoute.second->pointsInRoute_.begin(), pairOfNewRoute.second->pointsInRoute_.end());
+            }
+            else
+            {
+                OrderPointsInNewWay.insert(it, pairOfNewRoute.second->pointsInRoute_.rbegin(), pairOfNewRoute.second->pointsInRoute_.rend());
+            }
+        }
+        if (pairOfPointer.first < pairOfPointer.second)
+        {
+            newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
+        }
+        else
+        {
+            newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
+        }
+        listOfNewRoutes.erase(pairOfNewRoute.first);
+        listOfNewRoutes.erase(pairOfNewRoute.second);
     }
-
+    listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));
 
 }
 
