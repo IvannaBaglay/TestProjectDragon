@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <iomanip>
+#include <memory>
 using json = nlohmann::json;
 
 struct box
@@ -42,6 +43,32 @@ struct ship
 
 };
 
+class MatrixOfKilometerGrowth
+{
+    typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
+public:
+    MatrixOfKilometerGrowth() 
+    {
+
+    }
+    void CreateMartixOfKilometerGrowth(size_t sizeMatrix) 
+    {
+        matrix_ = std::make_unique<ptr_to_matrix>();
+        for (int i = 0; i != sizeMatrix; i++)
+        {
+            (*matrix_).push_back(std::make_unique<std::vector<float>>());
+            for (int j = 0; j != i; j++)
+            {
+                (*(*matrix_)[i]).push_back(1);
+            }
+        }
+    }
+protected:
+
+private:    
+    std::unique_ptr <ptr_to_matrix> matrix_;
+};
+
 struct IvannaBaglayPathFinder : public IGalaxyPathFinder
 {
 private:
@@ -49,6 +76,7 @@ private:
 	std::vector<targetPoint> targetPoints_;
 	ship myship_;
 
+    MatrixOfKilometerGrowth MatrixOfKilometerGrowth_;
 public:
 	virtual void FindSolution(const char* inputJasonFile, const char* outputFileName);
 	virtual const char* ShowCaptainName() { return "Ivanna Baglay"; }
@@ -69,10 +97,10 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
     json j = json::parse(i, nullptr, false);
 	// do some stuff
     LoadInformationFromJson(j);
-
+    CreateMatrixForAlgorithm();
 
     /*
-    CreateMatrixForAlgorithm();
+    
     while(!boxes_.empty())
     {
     
@@ -149,7 +177,11 @@ void IvannaBaglayPathFinder::FindShortestRoutes()
     */
 }
 
+void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
+{
+    MatrixOfKilometerGrowth_.CreateMartixOfKilometerGrowth(targetPoints_.size());
 
+}
 
 int main()
 {
