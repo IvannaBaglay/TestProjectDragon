@@ -68,12 +68,13 @@ struct SimpleRoute
 
 struct NewRoute
 {
-    NewRoute(std::deque<size_t> route, float way, float weightOfShip = 0, std::vector<box> boxes = {}) :
-        pointsInRoute_(route), way_(way), weightOfShip_(weightOfShip), boxesOfShip_(boxes) {}
+    NewRoute(std::deque<size_t> route, float way, float weightOfShip = 0, std::vector<box> boxes = {}, float weightOfFuel = 0) :
+        pointsInRoute_(route), way_(way), weightOfShip_(weightOfShip), boxesOfShip_(boxes), weightOfFuel_(weightOfFuel) {}
 
     std::deque<size_t> pointsInRoute_;
     float way_;
     float weightOfShip_;
+	float weightOfFuel_;
     std::vector<box> boxesOfShip_;
 
     bool ArePairOfPointsInRoute(std::pair<size_t, size_t> pairOfPoint)
@@ -185,9 +186,11 @@ public:
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPoints);
 	std::vector<NewRoute>::const_iterator FindIteratorOfNewRoute(size_t point);
 	std::deque<size_t> CreateNewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
+	std::vector<box> CalculateNewListOfBox(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
 	float CalculateNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
 	float CalculateWeightOfBoxes(std::vector<box> boxes);
 	float CalculateWeightOfBoxes(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
+	float CalculateWeightOfFuel(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
     bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
@@ -305,7 +308,7 @@ void IvannaBaglayPathFinder::LoadFirstInformationAboutNewRoutes()
 	for (size_t i = 0; i < listOfSimpleRoutes.size(); i++)
 	{
 		way = 2 * (*(*matrixPtr)[i])[0];
-		listOfNewRoutes.push_back(NewRoute({i}, way, CalculateWeightOfBoxes(listOfSimpleRoutes[i].boxes_), listOfSimpleRoutes[i].boxes_));
+		listOfNewRoutes.push_back(NewRoute({i}, way, CalculateWeightOfBoxes(listOfSimpleRoutes[i].boxes_), listOfSimpleRoutes[i].boxes_, way * myship_.resourcesConsumption_));
 	}
 }
 
@@ -396,12 +399,14 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
 {
     auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPoints);
 	std::deque<size_t> OrderPointsInNewWay = CreateNewRoute(pairOfNewRoute, pairOfPoints);
+	std::vector<box> boxes = CalculateNewListOfBox(pairOfNewRoute);
 	float newWay = CalculateNewWay(pairOfNewRoute, pairOfPoints);
-	float newWeight = CalculateWeightOfBoxes(pairOfNewRoute);
+	float newWeightofBoxes = CalculateWeightOfBoxes(pairOfNewRoute);
+	float newWeightOfFuel = CalculateWeightOfFuel(pairOfNewRoute);
 	ChangeInformationAboutSimpleWay(pairOfNewRoute, pairOfPoints);
 	listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPoints.first));
 	listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPoints.second));
-	listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay, newWeight));	
+	listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay, newWeightofBoxes, boxes, newWeightOfFuel));	
 }
 
 std::deque<size_t> IvannaBaglayPathFinder::CreateNewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints)
@@ -489,6 +494,17 @@ float IvannaBaglayPathFinder::CalculateWeightOfBoxes(std::vector<box> boxes)
 float IvannaBaglayPathFinder::CalculateWeightOfBoxes(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute)
 {
 	return pairOfNewRoute.first->weightOfShip_ + pairOfNewRoute.second->weightOfShip_;
+}
+
+std::vector<box> IvannaBaglayPathFinder::CalculateNewListOfBox(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute)
+{
+	std::vector<box> boxes = pairOfNewRoute.first->boxesOfShip_;
+	boxes.insert(boxes.begin(), pairOfNewRoute.second->boxesOfShip_.begin(), pairOfNewRoute.second->boxesOfShip_.end());
+	return boxes;
+}
+float IvannaBaglayPathFinder::CalculateWeightOfFuel(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute)
+{
+	return pairOfNewRoute.first->weightOfFuel_ + pairOfNewRoute.second->weightOfFuel_;
 }
 
 int main()
