@@ -13,14 +13,13 @@
 #define USELESS -1
 
 using json = nlohmann::json;
-
 typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
-// If Sij was used then I write on this plase -1;
 
 struct box
 {
     box(int id, int x, int y, int z, float w, int target) :
         id_(id), x_(x), y_(y), z_(z), w_(w), target_(target) {}
+
 	int id_;
 	int x_, y_, z_;
 	float w_;
@@ -31,6 +30,7 @@ struct targetPoint
 {
     targetPoint(int id, float x, float y, float z) :
         id_(id), x_(x), y_(y), z_(z) {}
+
 	int id_;
 	float x_, y_, z_;
 };
@@ -63,44 +63,33 @@ struct SimpleRoute
 
 struct NewRoute
 {
-    /*
-    constructor
-    */
     NewRoute(std::deque<size_t> route, float way, float weightOfShip = 0, std::vector<box> boxes = {}) :
-        pointsInRoute_(route), way_(way), weightOfShip_(weightOfShip), boxesOfShip_(boxes)
-    {
+        pointsInRoute_(route), way_(way), weightOfShip_(weightOfShip), boxesOfShip_(boxes) {}
 
-    }
     std::deque<size_t> pointsInRoute_;
     float way_;
     float weightOfShip_;
     std::vector<box> boxesOfShip_;
+
     bool ArePairOfPointsInRoute(std::pair<size_t, size_t> pairOfPoint)
     {
         auto itFirst = std::find(pointsInRoute_.cbegin(), pointsInRoute_.cend(), pairOfPoint.first);
         auto itSecond = std::find(pointsInRoute_.cbegin(), pointsInRoute_.cend(), pairOfPoint.second);
         return (itFirst != pointsInRoute_.end() && itSecond != pointsInRoute_.end()) ? true : false;
     }
+
     bool IsPointInRoute(size_t point)
     {
         auto it = std::find(pointsInRoute_.cbegin(), pointsInRoute_.cend(), point);
         return (it != pointsInRoute_.end()) ? true : false;
     }
-
-    /*
-    function for checked pair in deque;
-    function for checked one part of pair 
-
-    added new point or new set to set
-
-    */
 };
 
 class Matrix
 {
 public:
     Matrix() {}
-    //TODO: Base point can be not first in json file and problem that we don't have base point
+
     void CreateMartix(size_t sizeMatrix) 
     {
         matrixPtr_ = std::make_shared<ptr_to_matrix>();
@@ -115,6 +104,7 @@ public:
             }
         }
     }
+
     void FitMatrix(std::vector<targetPoint>& targetPoints)
     {
         for (size_t i = 0; i < row_; i++)
@@ -127,6 +117,7 @@ public:
             }
         }
     }
+
     void FitMatrix(Matrix& matrix)
     {
         for (size_t i = 0; i < row_; i++)
@@ -137,18 +128,22 @@ public:
             }
         }
     }
+
     const size_t get_row() const
     {
         return row_;
     }
+
     const auto get_matrix_ptr() const
     {
         return matrixPtr_;
     }
+
 	const size_t get_size_matrix() const
 	{
 		return sizeMatrix_;
 	}
+
 protected:
     std::shared_ptr <ptr_to_matrix> matrixPtr_;
 private:    
@@ -159,14 +154,14 @@ private:
 struct IvannaBaglayPathFinder : public IGalaxyPathFinder
 {
 private:
-	std::vector<box> boxes_; // added only on base
+	std::vector<SimpleRoute> listOfSimpleRoutes;
+	std::vector<NewRoute> listOfNewRoutes;
+	std::vector<box> boxes_;
 	std::vector<targetPoint> targetPoints_;
 	ship myship_;
-
     Matrix matrixOfKilometerBetweenPoints_;
     Matrix matrixOfKilometerGrowth_;
-    std::vector<SimpleRoute> listOfSimpleRoutes;
-    std::vector<NewRoute> listOfNewRoutes;
+    
 public:
 	virtual void FindSolution(const char* inputJasonFile, const char* outputFileName);
 	virtual const char* ShowCaptainName() { return "Ivanna Baglay"; }
@@ -179,43 +174,31 @@ public:
     void LoadInformationAboutSimpleRoutes();
 	void LoadFirstInformationAboutNewRoutes();
     void FindShortestRoutes();
+	void UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer);
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer);
 	std::vector<NewRoute>::const_iterator FindIteratorOfNewRoute(size_t point);
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
     bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
-
     bool HaveEnoughResources(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
-
-    bool IsOverload(size_t firstPoint, size_t secondPoint);
-    bool IsOverload(size_t point, NewRoute route);
-    bool IsOverload(NewRoute firstRoute, NewRoute secondRoute);
-   
-    bool CanBoxesBePacked(size_t firstPoint, size_t secondPoint);
-    bool CanBoxesBePacked(size_t point, NewRoute route);
-    bool CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute);
-
-    void UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer);
-
+    bool IsOverload(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
+    bool CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
 {
     std::vector<targetPoint> shortestRoutes;
 	std::ifstream i(inputJasonFile);
-
     json j = json::parse(i, nullptr, false);
-	// do some stuff
+
     LoadInformationFromJson(j);
     CreateMatrixForAlgorithm();
     LoadInformationAboutSimpleRoutes();
 	LoadFirstInformationAboutNewRoutes();
-	
-
     FindShortestRoutes();
+
     /*
-    
     while(!boxes_.empty())
     {
     
@@ -223,15 +206,10 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
         DeliverBoxes(shortestRoutes);  // return string about shippedBoxes
                                 // like
     }
-
     */
 
-	 
     json j_out;
     j_out["steps"] = json::array();
-
-	// do some stuff
-
 	std::ofstream o(outputFileName);
 	o << std::setw(4) << j_out << std::endl; //Write solution in file
 }
@@ -248,33 +226,31 @@ void IvannaBaglayPathFinder::LoadInformationAboutShipFromJson(json& j)
     myship_.maxFuelWeight_ = j["maxResourcesWeight"];
     myship_.maxCarryingWeight_ = j["maxCarryingWeight"];
     myship_.resourcesConsumption_ = j["resourcesConsumption"];
-
     myship_.maxCarryCapacity_.half_x_ = j["maxCarryingCapacity"]["half_x"];
     myship_.maxCarryCapacity_.half_y_ = j["maxCarryingCapacity"]["half_y"];
     myship_.maxCarryCapacity_.half_z_ = j["maxCarryingCapacity"]["half_z"];
 }
+
 void IvannaBaglayPathFinder::LoadInformationAboutBoxFromJson(json& j)
 {
     for (json::iterator it = j.begin(); it != j.end(); it++)
     {
         boxes_.push_back(box((*it)["boxId"], (*it)["half_x"], (*it)["half_y"], (*it)["half_z"],
                             (*it)["weight"], (*it)["targetPointId"]));
-
     }
 }
+
 void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
 {
     for (json::iterator it = j.begin(); it != j.end(); it++)
     {
         targetPoints_.push_back(targetPoint((*it)["pointId"],
                                             (*it)["x"], (*it)["y"], (*it)["z"]));
-
     }
 	std::sort(targetPoints_.begin(), targetPoints_.end(), [](targetPoint first, targetPoint second)
 		{
 			return first.id_ < second.id_;
 		});
-
 }
 
 void IvannaBaglayPathFinder::FindShortestRoutes()
@@ -289,7 +265,6 @@ void IvannaBaglayPathFinder::FindShortestRoutes()
 			UniteSimpleRoute(maxKilometerGrowth);
 		}
 	} while (counterMatrixPoints <= matrixOfKilometerGrowth_.get_size_matrix());
-    
 }
 
 void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
@@ -298,7 +273,6 @@ void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
     matrixOfKilometerGrowth_.CreateMartix(targetPoints_.size());
     matrixOfKilometerBetweenPoints_.FitMatrix(targetPoints_);
     matrixOfKilometerGrowth_.FitMatrix(matrixOfKilometerBetweenPoints_);
-
 }
 
 void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
@@ -312,6 +286,7 @@ void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
         boxesForCurrentPoint.clear();
     }
 }
+
 void IvannaBaglayPathFinder::LoadFirstInformationAboutNewRoutes()
 {
 	float way = 0;
@@ -388,11 +363,11 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(NewRoute firstRoute, NewRoute s
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
 }
 
-bool IvannaBaglayPathFinder::IsOverload(size_t firstPoint, size_t secondPoint)
+bool IvannaBaglayPathFinder::IsOverload(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
 {
     return true;
 }
-bool IvannaBaglayPathFinder::CanBoxesBePacked(size_t firstPoint, size_t secondPoint)
+bool IvannaBaglayPathFinder::CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
 {
     // ????????????????????
     return true;
@@ -419,9 +394,9 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
 {
     auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
     auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPointer);
-    std::deque<size_t> OrderPointsInNewWay;
-    float newWay;
-
+	float newWay;
+	std::deque<size_t> OrderPointsInNewWay;
+	// TODO: refactoring: separate on simple function
 	OrderPointsInNewWay = pairOfNewRoute.first->pointsInRoute_;
     if (pairOfNewRoute.first->pointsInRoute_[0] == pairOfPointer.first)
     {
@@ -438,7 +413,6 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
     }
     else
     {
-		// TODO: refactoring
 		auto it = OrderPointsInNewWay.end();
         if (pairOfNewRoute.second->pointsInRoute_[0] == pairOfPointer.second)
         {
