@@ -18,11 +18,11 @@ typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
 struct box
 {
     box(int id, int x, int y, int z, float w, int target) :
-        id_(id), x_(x), y_(y), z_(z), w_(w), target_(target) {}
+        id_(id), x_(x), y_(y), z_(z), weight_(w), target_(target) {}
 
 	int id_;
 	int x_, y_, z_;
-	float w_;
+	float weight_;
 	int target_;
 };
 
@@ -38,7 +38,7 @@ struct targetPoint
 struct ship
 {
     std::vector<box> boxes_;
-	float maxFuelWeight_;
+	float maxFuelWeight_; 
 	float maxCarryingWeight_;
     float resourcesConsumption_;
 
@@ -48,6 +48,11 @@ struct ship
         int half_y_;
         int half_z_;
     } maxCarryCapacity_;
+
+	const float get_weight_for_boxes() const 
+	{
+		return maxCarryingWeight_ - maxFuelWeight_;
+	}
 };
 
 struct SimpleRoute
@@ -180,11 +185,14 @@ public:
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPoints);
 	std::vector<NewRoute>::const_iterator FindIteratorOfNewRoute(size_t point);
 	std::deque<size_t> CreateNewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
-	float TakeNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
+	float CalculateNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
+	float CalculateWeightOfBoxes(std::vector<box> boxes);
+	float CalculateWeightOfBoxes(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
     bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
     bool HaveEnoughResources(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
+	bool CanBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
     bool IsOverload(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
     bool CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
 };
@@ -297,7 +305,7 @@ void IvannaBaglayPathFinder::LoadFirstInformationAboutNewRoutes()
 	for (size_t i = 0; i < listOfSimpleRoutes.size(); i++)
 	{
 		way = 2 * (*(*matrixPtr)[i])[0];
-		listOfNewRoutes.push_back(NewRoute({i}, way));
+		listOfNewRoutes.push_back(NewRoute({i}, way, CalculateWeightOfBoxes(listOfSimpleRoutes[i].boxes_), listOfSimpleRoutes[i].boxes_));
 	}
 }
 
@@ -329,8 +337,9 @@ bool IvannaBaglayPathFinder::AreAllConditionTrue(std::pair<size_t, size_t> pairO
     if (AreEndOrStartPoints(pairOfPointer) && !ArePointsInOneClass(pairOfPointer))
     {
         auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPointer);
-		return HaveEnoughResources(*pairOfNewRoute.first, *pairOfNewRoute.second, pairOfPointer.first, pairOfPointer.second) /*&& IsOverload(pairOfPoints.first, pairOfPoints.second) && CanBoxesBePacked(pairOfPoints.first, pairOfPoints.second)*/;
-    }
+		return HaveEnoughResources(*pairOfNewRoute.first, *pairOfNewRoute.second, pairOfPointer.first, pairOfPointer.second) &&
+			CanBePacked(*pairOfNewRoute.first, *pairOfNewRoute.second, pairOfPointer.first, pairOfPointer.second);			
+	}
     return false;
 }
 
@@ -366,16 +375,6 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(NewRoute firstRoute, NewRoute s
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
 }
 
-bool IvannaBaglayPathFinder::IsOverload(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
-{
-    return true;
-}
-bool IvannaBaglayPathFinder::CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
-{
-    // ????????????????????
-    return true;
-}
-
 std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> IvannaBaglayPathFinder::FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer)
 {
 	auto itFirst = FindIteratorOfNewRoute(pairOfPointer.first);
@@ -395,14 +394,14 @@ std::vector<NewRoute>::const_iterator IvannaBaglayPathFinder::FindIteratorOfNewR
 
 void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPoints)
 {
-   
     auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPoints);
 	std::deque<size_t> OrderPointsInNewWay = CreateNewRoute(pairOfNewRoute, pairOfPoints);
-	float newWay = TakeNewWay(pairOfNewRoute, pairOfPoints);
+	float newWay = CalculateNewWay(pairOfNewRoute, pairOfPoints);
+	float newWeight = CalculateWeightOfBoxes(pairOfNewRoute);
 	ChangeInformationAboutSimpleWay(pairOfNewRoute, pairOfPoints);
 	listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPoints.first));
 	listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPoints.second));
-	listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));	
+	listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay, newWeight));	
 }
 
 std::deque<size_t> IvannaBaglayPathFinder::CreateNewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints)
@@ -438,17 +437,21 @@ std::deque<size_t> IvannaBaglayPathFinder::CreateNewRoute(std::pair<std::vector<
 	return OrderPointsInNewWay;
 }
 
-float IvannaBaglayPathFinder::TakeNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints)
+float IvannaBaglayPathFinder::CalculateNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints)
 {
 	auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
 	float newWay;
 	if (pairOfPoints.first < pairOfPoints.second)
 	{
-		newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPoints.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPoints.second])[0] + (*(*matrixPtr)[pairOfPoints.second])[pairOfPoints.first];
+		newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPoints.first])[0] + 
+			pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPoints.second])[0] + 
+			(*(*matrixPtr)[pairOfPoints.second])[pairOfPoints.first];
 	}
 	else
 	{
-		newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPoints.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPoints.second])[0] + (*(*matrixPtr)[pairOfPoints.first])[pairOfPoints.second];
+		newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPoints.first])[0] + 
+			pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPoints.second])[0] + 
+			(*(*matrixPtr)[pairOfPoints.first])[pairOfPoints.second];
 	}
 	return newWay;
 }
@@ -463,6 +466,29 @@ void IvannaBaglayPathFinder::ChangeInformationAboutSimpleWay(std::pair<std::vect
 	{
 		listOfSimpleRoutes[pairOfPoints.second].isEndOrStartPointInRoute_ = false;
 	}
+}
+
+bool IvannaBaglayPathFinder::CanBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
+{
+	return IsOverload(firstRoute, secondRoute, pointInFirstRoute, pointInSecondRoute) && CanBoxesBePacked(firstRoute, secondRoute, pointInFirstRoute, pointInSecondRoute);
+}
+
+bool IvannaBaglayPathFinder::IsOverload(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
+{
+	return (firstRoute.weightOfShip_ + secondRoute.weightOfShip_ < myship_.get_weight_for_boxes());
+}
+bool IvannaBaglayPathFinder::CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
+{
+	// ????????????????????
+	return true;
+}
+float IvannaBaglayPathFinder::CalculateWeightOfBoxes(std::vector<box> boxes)
+{
+	return  std::accumulate(boxes.begin(), boxes.end(), 0, [](float sum, box firstBox) { return sum + firstBox.weight_; });
+}
+float IvannaBaglayPathFinder::CalculateWeightOfBoxes(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute)
+{
+	return pairOfNewRoute.first->weightOfShip_ + pairOfNewRoute.second->weightOfShip_;
 }
 
 int main()
