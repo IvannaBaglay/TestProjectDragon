@@ -177,6 +177,7 @@ public:
     void LoadInformationAboutBoxFromJson(json& j);
     void CreateMatrixForAlgorithm();
     void LoadInformationAboutSimpleRoutes();
+	void LoadFirstInformationAboutNewRoutes();
     void FindShortestRoutes();
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer);
@@ -211,6 +212,8 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
     LoadInformationFromJson(j);
     CreateMatrixForAlgorithm();
     LoadInformationAboutSimpleRoutes();
+	LoadFirstInformationAboutNewRoutes();
+	
 
     FindShortestRoutes();
     /*
@@ -310,6 +313,16 @@ void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
         listOfSimpleRoutes.push_back(SimpleRoute(i, boxesForCurrentPoint, targetPoints_[i]));
         boxesForCurrentPoint.clear();
     }
+}
+void IvannaBaglayPathFinder::LoadFirstInformationAboutNewRoutes()
+{
+	float way = 0;
+	auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
+	for (size_t i = 0; i < listOfSimpleRoutes.size(); i++)
+	{
+		way = 2 * (*(*matrixPtr)[i])[0];
+		listOfNewRoutes.push_back(NewRoute({i}, way));
+	}
 }
 
 std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrowth()
@@ -577,8 +590,17 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
         {
             newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
         }
-		listOfSimpleRoutes[pairOfPointer.first].isEndOrStartPointInRoute_ = false;
-		listOfSimpleRoutes[pairOfPointer.second].isEndOrStartPointInRoute_ = false;
+
+
+		if (FindIteratorOfNewRoute(pairOfPointer.first)->pointsInRoute_.size() > 1)
+		{
+			listOfSimpleRoutes[pairOfPointer.first].isEndOrStartPointInRoute_ = false;
+		}
+		if (FindIteratorOfNewRoute(pairOfPointer.second)->pointsInRoute_.size() > 1)
+		{
+			listOfSimpleRoutes[pairOfPointer.second].isEndOrStartPointInRoute_ = false;
+		}
+		
 
 		
         listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPointer.first));
@@ -590,7 +612,15 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
 
 int main()
 {
-    IvannaBaglayPathFinder test;
-    test.FindSolution("inputData1.json", "outData1.json");
+    IvannaBaglayPathFinder test1;
+	IvannaBaglayPathFinder test2;
+	IvannaBaglayPathFinder test3;
+	IvannaBaglayPathFinder test4;
+	IvannaBaglayPathFinder test5;
+    test1.FindSolution("inputData1.json", "outData1.json");
+	test2.FindSolution("inputData2.json", "outData1.json");
+	test3.FindSolution("inputData3.json", "outData1.json");
+	test4.FindSolution("inputData4.json", "outData1.json");
+	test5.FindSolution("inputData5.json", "outData1.json");
     return 0;
 }
