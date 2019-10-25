@@ -175,9 +175,12 @@ public:
 	void LoadFirstInformationAboutNewRoutes();
     void FindShortestRoutes();
 	void UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer);
+	void ChangeInformationAboutSimpleWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
-    std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer);
+    std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPoints);
 	std::vector<NewRoute>::const_iterator FindIteratorOfNewRoute(size_t point);
+	std::deque<size_t> CreateNewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
+	float TakeNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
     bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
@@ -326,7 +329,7 @@ bool IvannaBaglayPathFinder::AreAllConditionTrue(std::pair<size_t, size_t> pairO
     if (AreEndOrStartPoints(pairOfPointer) && !ArePointsInOneClass(pairOfPointer))
     {
         auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPointer);
-		return HaveEnoughResources(*pairOfNewRoute.first, *pairOfNewRoute.second, pairOfPointer.first, pairOfPointer.second) /*&& IsOverload(pairOfPointer.first, pairOfPointer.second) && CanBoxesBePacked(pairOfPointer.first, pairOfPointer.second)*/;
+		return HaveEnoughResources(*pairOfNewRoute.first, *pairOfNewRoute.second, pairOfPointer.first, pairOfPointer.second) /*&& IsOverload(pairOfPoints.first, pairOfPoints.second) && CanBoxesBePacked(pairOfPoints.first, pairOfPoints.second)*/;
     }
     return false;
 }
@@ -390,59 +393,76 @@ std::vector<NewRoute>::const_iterator IvannaBaglayPathFinder::FindIteratorOfNewR
 	return it;
 }
 
-void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer)
+void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPoints)
 {
-    auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
-    auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPointer);
-	float newWay;
-	std::deque<size_t> OrderPointsInNewWay;
-	// TODO: refactoring: separate on simple function
-	OrderPointsInNewWay = pairOfNewRoute.first->pointsInRoute_;
-    if (pairOfNewRoute.first->pointsInRoute_[0] == pairOfPointer.first)
-    {
-		auto it = OrderPointsInNewWay.begin();
-        if (pairOfNewRoute.second->pointsInRoute_[0] != pairOfPointer.second)
-        {
-             OrderPointsInNewWay.insert(it, pairOfNewRoute.second->pointsInRoute_.begin(), pairOfNewRoute.second->pointsInRoute_.end());
-        }
-        else
-        {
-			std::deque<size_t> reverseDeque(pairOfNewRoute.second->pointsInRoute_.rbegin(), pairOfNewRoute.second->pointsInRoute_.rend());
-            OrderPointsInNewWay.insert(it, reverseDeque.begin(), reverseDeque.end());
-        }
-    }
-    else
-    {
-		auto it = OrderPointsInNewWay.end();
-        if (pairOfNewRoute.second->pointsInRoute_[0] == pairOfPointer.second)
-        {
-            OrderPointsInNewWay.insert(it, pairOfNewRoute.second->pointsInRoute_.begin(), pairOfNewRoute.second->pointsInRoute_.end());
-        }
-        else
-        {
-			std::deque<size_t> reverseDeque (pairOfNewRoute.second->pointsInRoute_.rbegin(), pairOfNewRoute.second->pointsInRoute_.rend());
-			OrderPointsInNewWay.insert(it, reverseDeque.begin(), reverseDeque.end());
-        }
-    }
-    if (pairOfPointer.first < pairOfPointer.second)
-    {
-		newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
-    }
-	else
-    {
-        newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
-	}
-	if (FindIteratorOfNewRoute(pairOfPointer.first)->pointsInRoute_.size() > 1)
-	{
-		listOfSimpleRoutes[pairOfPointer.first].isEndOrStartPointInRoute_ = false;
-	}
-	if (FindIteratorOfNewRoute(pairOfPointer.second)->pointsInRoute_.size() > 1)
-	{
-		listOfSimpleRoutes[pairOfPointer.second].isEndOrStartPointInRoute_ = false;
-	}
-	listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPointer.first));
-	listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPointer.second));
+   
+    auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPoints);
+	std::deque<size_t> OrderPointsInNewWay = CreateNewRoute(pairOfNewRoute, pairOfPoints);
+	float newWay = TakeNewWay(pairOfNewRoute, pairOfPoints);
+	ChangeInformationAboutSimpleWay(pairOfNewRoute, pairOfPoints);
+	listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPoints.first));
+	listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPoints.second));
 	listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));	
+}
+
+std::deque<size_t> IvannaBaglayPathFinder::CreateNewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints)
+{
+	auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
+	std::deque<size_t> OrderPointsInNewWay = pairOfNewRoute.first->pointsInRoute_;
+	if (pairOfNewRoute.first->pointsInRoute_[0] == pairOfPoints.first)
+	{
+		auto it = OrderPointsInNewWay.begin();
+		if (pairOfNewRoute.second->pointsInRoute_[0] != pairOfPoints.second)
+		{
+			OrderPointsInNewWay.insert(it, pairOfNewRoute.second->pointsInRoute_.begin(), pairOfNewRoute.second->pointsInRoute_.end());
+		}
+		else
+		{
+			std::deque<size_t> reverseDeque(pairOfNewRoute.second->pointsInRoute_.rbegin(), pairOfNewRoute.second->pointsInRoute_.rend());
+			OrderPointsInNewWay.insert(it, reverseDeque.begin(), reverseDeque.end());
+		}
+	}
+	else
+	{
+		auto it = OrderPointsInNewWay.end();
+		if (pairOfNewRoute.second->pointsInRoute_[0] == pairOfPoints.second)
+		{
+			OrderPointsInNewWay.insert(it, pairOfNewRoute.second->pointsInRoute_.begin(), pairOfNewRoute.second->pointsInRoute_.end());
+		}
+		else
+		{
+			std::deque<size_t> reverseDeque(pairOfNewRoute.second->pointsInRoute_.rbegin(), pairOfNewRoute.second->pointsInRoute_.rend());
+			OrderPointsInNewWay.insert(it, reverseDeque.begin(), reverseDeque.end());
+		}
+	}
+	return OrderPointsInNewWay;
+}
+
+float IvannaBaglayPathFinder::TakeNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints)
+{
+	auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
+	float newWay;
+	if (pairOfPoints.first < pairOfPoints.second)
+	{
+		newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPoints.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPoints.second])[0] + (*(*matrixPtr)[pairOfPoints.second])[pairOfPoints.first];
+	}
+	else
+	{
+		newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPoints.first])[0] + pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPoints.second])[0] + (*(*matrixPtr)[pairOfPoints.first])[pairOfPoints.second];
+	}
+	return newWay;
+}
+
+void IvannaBaglayPathFinder::ChangeInformationAboutSimpleWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints)
+{
+	if (FindIteratorOfNewRoute(pairOfPoints.first)->pointsInRoute_.size() > 1)
+	{
+		listOfSimpleRoutes[pairOfPoints.first].isEndOrStartPointInRoute_ = false;
+	}
+	if (FindIteratorOfNewRoute(pairOfPoints.second)->pointsInRoute_.size() > 1)
+	{
+		listOfSimpleRoutes[pairOfPoints.second].isEndOrStartPointInRoute_ = false;
+	}
 }
 
 int main()
