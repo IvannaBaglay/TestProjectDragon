@@ -144,6 +144,10 @@ public:
     {
         return matrixPtr_;
     }
+	const size_t get_size_matrix() const
+	{
+		return sizeMatrix_;
+	}
 protected:
     std::shared_ptr <ptr_to_matrix> matrixPtr_;
 private:    
@@ -266,11 +270,17 @@ void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
 
 void IvannaBaglayPathFinder::FindShortestRoutes()
 {
-    auto maxKilometerGrowth = FindMaxFromMatrixKilometerGrowth(); // return pair i j;
-    if (AreAllConditionTrue(maxKilometerGrowth))
-    {
-        UniteSimpleRoute(maxKilometerGrowth);
-    }
+	size_t counterMatrixPoints = 0;
+	do 
+	{
+		auto maxKilometerGrowth = FindMaxFromMatrixKilometerGrowth(); // return pair i j;
+		counterMatrixPoints++;
+		if (AreAllConditionTrue(maxKilometerGrowth))
+		{
+			UniteSimpleRoute(maxKilometerGrowth);
+		}
+	} while (counterMatrixPoints <= matrixOfKilometerGrowth_.get_size_matrix());
+    
 }
 
 void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
@@ -285,7 +295,7 @@ void IvannaBaglayPathFinder::CreateMatrixForAlgorithm()
 void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
 {
     std::vector<box> boxesForCurrentPoint;
-    for (size_t i = 1; i < targetPoints_.size(); i++)
+    for (size_t i = 0; i < targetPoints_.size(); i++)
     {
         int currentPoint = targetPoints_[i].id_;
         copy_if(boxes_.begin(), boxes_.end(), back_inserter(boxesForCurrentPoint), [currentPoint](box b) { return b.target_ == currentPoint; });
@@ -303,7 +313,7 @@ std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrow
     auto matrixPtr = matrixOfKilometerGrowth_.get_matrix_ptr();
     for (size_t i = 0; i < rowMatrix ; i++)
     {
-        for (size_t j = 0; j <= i; j++)
+        for (size_t j = 0; j < i; j++)
         {
             if ((*(*matrixPtr)[i])[j] > maxValue)
             {
@@ -314,7 +324,7 @@ std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrow
         }  
     }
     (*(*matrixPtr)[maxi])[maxj] = USELESS; // will not be used further
-    return std::pair<size_t, size_t>(maxj, maxj);
+    return std::pair<size_t, size_t>(maxi, maxj);
 }
 
 bool IvannaBaglayPathFinder::AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer) 
@@ -374,11 +384,11 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(size_t firstPoint, size_t secon
     float newRoute;
     if (firstPoint < secondPoint)
     {
-        newRoute = (*(*matrixPtr)[firstPoint])[0] + (*(*matrixPtr)[firstPoint])[secondPoint] + (*(*matrixPtr)[secondPoint])[0];
+        newRoute = (*(*matrixPtr)[firstPoint])[0] + (*(*matrixPtr)[secondPoint])[firstPoint] + (*(*matrixPtr)[secondPoint])[0];
     }
     else
     {
-        newRoute = (*(*matrixPtr)[firstPoint])[0] + (*(*matrixPtr)[secondPoint])[firstPoint] + (*(*matrixPtr)[secondPoint])[0];
+        newRoute = (*(*matrixPtr)[firstPoint])[0] + (*(*matrixPtr)[firstPoint])[secondPoint] + (*(*matrixPtr)[secondPoint])[0];
     }
    
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
@@ -391,11 +401,11 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(size_t point, size_t pointInRou
     float newRoute;
     if (point < pointInRoute)
     {
-        newRoute = route.way_ - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[point])[pointInRoute];
+        newRoute = route.way_ - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[pointInRoute])[point];
     }
     else
     {
-        newRoute = route.way_ - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[pointInRoute])[point];
+        newRoute = route.way_ - (*(*matrixPtr)[pointInRoute])[0] + (*(*matrixPtr)[point])[0] + (*(*matrixPtr)[point])[pointInRoute];
     }
 
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
@@ -407,11 +417,11 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(NewRoute firstRoute, NewRoute s
     float newRoute;
     if (pointInFirstRoute < pointInSecondRoute)
     {
-        newRoute = firstRoute.way_ - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way_ - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInFirstRoute])[pointInSecondRoute];
+        newRoute = firstRoute.way_ - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way_ - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInSecondRoute])[pointInFirstRoute];
     }
     else
     {
-        newRoute = firstRoute.way_ - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way_ - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInSecondRoute])[pointInFirstRoute];
+        newRoute = firstRoute.way_ - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way_ - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInFirstRoute])[pointInSecondRoute];
     }
     return (newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) ? true : false;
 }
@@ -467,11 +477,11 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
         OrderPointsInNewWay.push_back(pairOfPointer.second);
         if (pairOfPointer.first < pairOfPointer.second)
         {
-            newWay = (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second] + (*(*matrixPtr)[pairOfPointer.second])[0];
+            newWay = (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first] + (*(*matrixPtr)[pairOfPointer.second])[0];
         }
         else
         {
-            newWay = (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first] + (*(*matrixPtr)[pairOfPointer.second])[0];
+            newWay = (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second] + (*(*matrixPtr)[pairOfPointer.second])[0];
         }
 
         
@@ -486,12 +496,12 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
 
         if (pairOfPointer.first < pairOfPointer.second)
         {
-            newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
+            newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
 
         }
         else
         {
-            newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
+            newWay = pairOfNewRoute.first->way_ - (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
         }
         listOfNewRoutes.erase(pairOfNewRoute.first);
        
@@ -505,12 +515,12 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
 
         if (pairOfPointer.first < pairOfPointer.second)
         {
-            newWay = pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
+            newWay = pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
 
         }
         else
         {
-            newWay = pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.second])[pairOfPointer.first];
+            newWay = pairOfNewRoute.second->way_ - (*(*matrixPtr)[pairOfPointer.second])[0] + (*(*matrixPtr)[pairOfPointer.first])[0] + (*(*matrixPtr)[pairOfPointer.first])[pairOfPointer.second];
         }
         listOfNewRoutes.erase(pairOfNewRoute.second);
         
