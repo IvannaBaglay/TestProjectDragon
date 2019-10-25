@@ -8,6 +8,7 @@
 #include <deque>
 #include <algorithm>
 #include <memory>
+#include <iterator>
 
 #define USELESS -1
 
@@ -179,6 +180,7 @@ public:
     void FindShortestRoutes();
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer);
+	std::vector<NewRoute>::const_iterator FindIteratorOfNewRoute(size_t point);
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
     bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
@@ -265,7 +267,13 @@ void IvannaBaglayPathFinder::LoadInformationAboutTargetPointFromJson(json& j)
     {
         targetPoints_.push_back(targetPoint((*it)["pointId"],
                                             (*it)["x"], (*it)["y"], (*it)["z"]));
+
     }
+	std::sort(targetPoints_.begin(), targetPoints_.end(), [](targetPoint first, targetPoint second)
+		{
+			return first.id_ < second.id_;
+		});
+
 }
 
 void IvannaBaglayPathFinder::FindShortestRoutes()
@@ -438,17 +446,19 @@ bool IvannaBaglayPathFinder::CanBoxesBePacked(size_t firstPoint, size_t secondPo
 
 std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> IvannaBaglayPathFinder::FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer)
 {
-    auto itFirst = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
-        {
-            auto it = std::find(newRoute.pointsInRoute_.cbegin(), newRoute.pointsInRoute_.cend(), pairOfPointer.first);
-            return (it != newRoute.pointsInRoute_.end()) ? true : false;
-        });
-    auto itSecond = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
-        {
-            auto it = std::find(newRoute.pointsInRoute_.cbegin(), newRoute.pointsInRoute_.cend(), pairOfPointer.second);
-            return (it != newRoute.pointsInRoute_.end()) ? true : false;
-        });
+	auto itFirst = FindIteratorOfNewRoute(pairOfPointer.first);
+    auto itSecond = FindIteratorOfNewRoute(pairOfPointer.second);
     return std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> { itFirst, itSecond};
+}
+
+std::vector<NewRoute>::const_iterator IvannaBaglayPathFinder::FindIteratorOfNewRoute(size_t point)
+{
+	auto it = std::find_if(listOfNewRoutes.cbegin(), listOfNewRoutes.cend(), [&](NewRoute newRoute)
+		{
+			auto it = std::find(newRoute.pointsInRoute_.cbegin(), newRoute.pointsInRoute_.cend(), point);
+			return (it != newRoute.pointsInRoute_.end()) ? true : false;
+		});
+	return it;
 }
 
 void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer)
@@ -569,8 +579,10 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
         }
 		listOfSimpleRoutes[pairOfPointer.first].isEndOrStartPointInRoute_ = false;
 		listOfSimpleRoutes[pairOfPointer.second].isEndOrStartPointInRoute_ = false;
-        listOfNewRoutes.erase(pairOfNewRoute.first);
-        listOfNewRoutes.erase(pairOfNewRoute.second);
+
+		
+        listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPointer.first));
+        listOfNewRoutes.erase(FindIteratorOfNewRoute(pairOfPointer.second));
     }
     listOfNewRoutes.push_back(NewRoute(OrderPointsInNewWay, newWay));
 
@@ -579,6 +591,6 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
 int main()
 {
     IvannaBaglayPathFinder test;
-    test.FindSolution("inputData2.json", "outData1.json");
+    test.FindSolution("inputData1.json", "outData1.json");
     return 0;
 }
