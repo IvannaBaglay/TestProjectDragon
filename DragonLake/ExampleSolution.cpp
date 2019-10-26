@@ -195,10 +195,10 @@ public:
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
     bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
-    bool HaveEnoughResources(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
-	bool CanBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
-    bool IsOverload(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
-    bool CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute);
+    bool HaveEnoughResources(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute, std::pair<size_t, size_t> pairOfPointer);
+	bool CanBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute);
+    bool IsOverload(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute);
+    bool CanBoxesBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute);
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
@@ -341,8 +341,8 @@ bool IvannaBaglayPathFinder::AreAllConditionTrue(std::pair<size_t, size_t> pairO
     if (AreEndOrStartPoints(pairOfPoints) && !ArePointsInOneClass(pairOfPoints))
     {
         auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPoints);
-		return HaveEnoughResources(*pairOfNewRoute.first, *pairOfNewRoute.second, pairOfPoints.first, pairOfPoints.second) &&
-			CanBePacked(*pairOfNewRoute.first, *pairOfNewRoute.second, pairOfPoints.first, pairOfPoints.second);			
+		return HaveEnoughResources(pairOfNewRoute, pairOfPoints) &&
+			CanBePacked(pairOfNewRoute);
 	}
     return false;
 }
@@ -364,19 +364,11 @@ bool IvannaBaglayPathFinder::ArePointsInOneClass(std::pair<size_t, size_t> pairO
     return false;
 }
 
-bool IvannaBaglayPathFinder::HaveEnoughResources(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
+bool IvannaBaglayPathFinder::HaveEnoughResources(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute, std::pair<size_t, size_t> pairOfPointer)
 {
-    auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
-    float newRoute;
-    if (pointInFirstRoute < pointInSecondRoute)
-    {
-        newRoute = firstRoute.way_ - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way_ - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInSecondRoute])[pointInFirstRoute];
-    }
-    else
-    {
-        newRoute = firstRoute.way_ - (*(*matrixPtr)[pointInFirstRoute])[0] + secondRoute.way_ - (*(*matrixPtr)[pointInSecondRoute])[0] + (*(*matrixPtr)[pointInFirstRoute])[pointInSecondRoute];
-    }
-    return ((newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) && (newRoute < GetCurrentFreeWeight(firstRoute, secondRoute) / myship_.resourcesConsumption_)) ? true : false;
+    
+	float newRoute = CalculateNewWay(pairOfRoute, pairOfPointer);
+    return ((newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) && (newRoute < GetCurrentFreeWeight(*pairOfRoute.first, *pairOfRoute.second) / myship_.resourcesConsumption_)) ? true : false;
 }
 
 std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> IvannaBaglayPathFinder::FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer)
@@ -474,16 +466,16 @@ void IvannaBaglayPathFinder::ChangeInformationAboutSimpleWay(std::pair<std::vect
 	}
 }
 
-bool IvannaBaglayPathFinder::CanBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
+bool IvannaBaglayPathFinder::CanBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute)
 {
-	return !IsOverload(firstRoute, secondRoute, pointInFirstRoute, pointInSecondRoute) && CanBoxesBePacked(firstRoute, secondRoute, pointInFirstRoute, pointInSecondRoute);
+	return !IsOverload(pairOfRoute) && CanBoxesBePacked(pairOfRoute);
 }
 
-bool IvannaBaglayPathFinder::IsOverload(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
+bool IvannaBaglayPathFinder::IsOverload(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute)
 {
-	return (myship_.maxCarryingWeight_ < GetCurrentFreeWeight(firstRoute, secondRoute));
+	return (myship_.maxCarryingWeight_ < GetCurrentFreeWeight(*pairOfRoute.first, *pairOfRoute.second));
 }
-bool IvannaBaglayPathFinder::CanBoxesBePacked(NewRoute firstRoute, NewRoute secondRoute, size_t pointInFirstRoute, size_t pointInSecondRoute)
+bool IvannaBaglayPathFinder::CanBoxesBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute)
 {
 	// ????????????????????
 	return true;
