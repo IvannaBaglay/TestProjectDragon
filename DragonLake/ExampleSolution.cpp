@@ -17,13 +17,14 @@ typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
 
 struct ExtremePoint
 {
-	ExtremePoint(int x, int y, int z, int boxId = 0, bool isFree = true) :
-		x_(x), y_(y), z_(z), boxId_(boxId), isFree_(isFree) {}
+	ExtremePoint(int x, int y, int z, int boxId = 0, bool isFree = true, int target = 0) :
+		x_(x), y_(y), z_(z), boxId_(boxId), isFree_(isFree), target_(target) {}
 
 	int x_;
 	int y_;
 	int z_;
 	int boxId_;
+	int target_;
 	bool isFree_;
 };
 
@@ -333,7 +334,7 @@ void IvannaBaglayPathFinder::LoadFirstInformationAboutNewRoutes()
 	for (size_t i = 0; i < listOfSimpleRoutes_.size(); i++)
 	{
 		way = 2 * (*(*matrixPtr)[i])[0];
-		listOfNewRoutes_.push_back(NewRoute({i}, way, CalculateWeightOfBoxes(listOfSimpleRoutes_[i].boxes_), listOfSimpleRoutes_[i].boxes_, way * myship_.resourcesConsumption_));
+		listOfNewRoutes_.push_back(NewRoute({i}, way, CalculateWeightOfBoxes(listOfSimpleRoutes_[i].boxes_), listOfSimpleRoutes_[i].boxes_, way * myship_.resourcesConsumption_, LoadBoxes(listOfSimpleRoutes_[i].boxes_)));
 	}
 }
 
@@ -503,9 +504,6 @@ bool IvannaBaglayPathFinder::IsOverload(std::pair<std::vector<NewRoute>::const_i
 bool IvannaBaglayPathFinder::CanBoxesBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute)
 {
 	std::vector<box> boxForRoute = CalculateNewListOfBox(pairOfRoute); // all box must be deliver in new route
-	std::sort(boxForRoute.begin(), boxForRoute.end(), [](box firstBox, box secondBox) {
-		return firstBox.get_volume() > secondBox.get_volume();
-		});
 	return (boxForRoute.size() == LoadBoxes(boxForRoute).size()) ? true : false;
 }
 float IvannaBaglayPathFinder::CalculateWeightOfBoxes(std::vector<box> boxes)
@@ -536,6 +534,9 @@ std::vector<ExtremePoint> IvannaBaglayPathFinder::LoadBoxes(std::vector<box> box
 {
 	std::vector<ExtremePoint> listOfExtremePoints{ {-myship_.maxCarryCapacity_.half_x_, -myship_.maxCarryCapacity_.half_y_, -myship_.maxCarryCapacity_.half_z_} };
 	std::vector<ExtremePoint>::iterator currentExternalPoint = listOfExtremePoints.end();
+	std::sort(boxForRoute.begin(), boxForRoute.end(), [](box firstBox, box secondBox) {
+		return firstBox.z_ > secondBox.z_;
+		});
 	for (auto itBox = boxForRoute.cbegin(); itBox != boxForRoute.cend(); itBox++)
 	{
 		currentExternalPoint = LoadOneBox(listOfExtremePoints, itBox);
@@ -567,6 +568,7 @@ void IvannaBaglayPathFinder::LoadNewExtremePoints(std::vector<ExtremePoint>& lis
 {
 	currentExtremePoint->isFree_ = false;
 	currentExtremePoint->boxId_ = itBox->id_;
+	currentExtremePoint->target_ = itBox->target_;
 	int x = currentExtremePoint->x_;
 	int y = currentExtremePoint->y_;
 	int z = currentExtremePoint->z_;
@@ -592,13 +594,13 @@ bool IvannaBaglayPathFinder::IsOverlayWithOthersBoxes(std::vector<ExtremePoint>&
 	{
 		if (!itExtremePoint->isFree_)
 		{
-			if (currentExtremePoint->x_ <= itExtremePoint->x_ &&
-				currentExtremePoint->y_  <= itExtremePoint->y_ &&
-				currentExtremePoint->z_  <= itExtremePoint->z_)
+			if (currentExtremePoint->x_ < itExtremePoint->x_ &&
+				currentExtremePoint->y_ < itExtremePoint->y_ &&
+				currentExtremePoint->z_ < itExtremePoint->z_)
 			{
-				if (currentExtremePoint->x_ + 2 * itBox->x_ >= itExtremePoint->x_ ||
-					currentExtremePoint->y_ + 2 * itBox->y_ >= itExtremePoint->y_ ||
-					currentExtremePoint->z_ + 2 * itBox->z_ >= itExtremePoint->z_)
+				if (currentExtremePoint->x_ + 2 * itBox->x_ > itExtremePoint->x_ ||
+					currentExtremePoint->y_ + 2 * itBox->y_ > itExtremePoint->y_ ||
+					currentExtremePoint->z_ + 2 * itBox->z_ > itExtremePoint->z_)
 				{
 					return true;
 				}
