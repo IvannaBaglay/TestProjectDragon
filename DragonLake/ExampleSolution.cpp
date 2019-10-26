@@ -17,7 +17,7 @@ typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
 
 struct ExtremePoint
 {
-	ExtremePoint(int x, int y, int z, int boxId = 0, bool isFree = false) :
+	ExtremePoint(int x, int y, int z, int boxId = 0, bool isFree = true) :
 		x_(x), y_(y), z_(z), boxId_(boxId), isFree_(isFree) {}
 
 	int x_;
@@ -198,12 +198,14 @@ public:
     void FindShortestRoutes();
 	void UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer);
 	void ChangeInformationAboutSimpleWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
+	void LoadNewExtremePoints(std::vector<ExtremePoint>& listOfExtremePoints, std::vector<ExtremePoint>::iterator currentExtremePoint, std::vector<box>::const_iterator itBox);
     std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPoints);
 	std::vector<NewRoute>::const_iterator FindIteratorOfNewRoute(size_t point);
 	std::deque<size_t> CreateNewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
 	std::vector<box> CalculateNewListOfBox(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
-	std::vector<ExtremePoint> LoadBox(std::vector<box> BoxForRoute);
+	std::vector<ExtremePoint> LoadBoxes(std::vector<box> BoxForRoute);
+	std::vector<ExtremePoint>::iterator LoadOneBox(std::vector<ExtremePoint> listOfExtremePoints, std::vector<box>::const_iterator itBox);
 	float CalculateNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
 	float CalculateWeightOfBoxes(std::vector<box> boxes);
 	float CalculateWeightOfBoxes(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
@@ -216,6 +218,7 @@ public:
 	bool CanBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute);
     bool IsOverload(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute);
     bool CanBoxesBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute);
+	
 };
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
@@ -501,7 +504,7 @@ bool IvannaBaglayPathFinder::CanBoxesBePacked(std::pair<std::vector<NewRoute>::c
 	std::sort(boxForRoute.begin(), boxForRoute.end(), [](box firstBox, box secondBox) {
 		return firstBox.get_volume() > secondBox.get_volume();
 		});
-	return (boxForRoute.size() == LoadBox(boxForRoute).size()) ? true : false;
+	return (boxForRoute.size() == LoadBoxes(boxForRoute).size()) ? true : false;
 }
 float IvannaBaglayPathFinder::CalculateWeightOfBoxes(std::vector<box> boxes)
 {
@@ -527,11 +530,33 @@ float IvannaBaglayPathFinder::GetCurrentFreeWeight(NewRoute firstRoute, NewRoute
 	return myship_.maxCarryingWeight_ - (firstRoute.weightOfFuel_ + firstRoute.weightOfShip_ + secondRoute.weightOfFuel_ + secondRoute.weightOfShip_);
 }
 
-std::vector<ExtremePoint> IvannaBaglayPathFinder::LoadBox(std::vector<box> boxForRoute)
+std::vector<ExtremePoint> IvannaBaglayPathFinder::LoadBoxes(std::vector<box> boxForRoute)
 {
-	std::vector<ExtremePoint> ListOfExtremePoints{ {-myship_.maxCarryCapacity_.half_x_, -myship_.maxCarryCapacity_.half_y_, -myship_.maxCarryCapacity_.half_z_} };
+	std::vector<ExtremePoint> listOfExtremePoints{ {-myship_.maxCarryCapacity_.half_x_, -myship_.maxCarryCapacity_.half_y_, -myship_.maxCarryCapacity_.half_z_} };
+	std::vector<ExtremePoint>::iterator currentExternalPoint;
+	for (auto itBox = boxForRoute.cbegin(); itBox != boxForRoute.cend(); itBox++)
+	{
+		currentExternalPoint = LoadOneBox(listOfExtremePoints, itBox);
+		if (currentExternalPoint != listOfExtremePoints.end())
+		{
+			LoadNewExtremePoints(listOfExtremePoints, currentExternalPoint, itBox);
+		}
+	}
+	return listOfExtremePoints;
+}
 
-	return {};
+std::vector<ExtremePoint>::iterator IvannaBaglayPathFinder::LoadOneBox(std::vector<ExtremePoint> listOfExtremePoints, std::vector<box>::const_iterator itBox)
+{
+	//?????????????
+	return listOfExtremePoints.end();
+}
+
+void IvannaBaglayPathFinder::LoadNewExtremePoints(std::vector<ExtremePoint>& listOfExtremePoints, std::vector<ExtremePoint>::iterator currentExtremePoint, std::vector<box>::const_iterator itBox)
+{
+	currentExtremePoint->isFree_ = false;
+	listOfExtremePoints.push_back({ currentExtremePoint->x_ + 2 * itBox->x_, currentExtremePoint->y_, currentExtremePoint->z_ });
+	listOfExtremePoints.push_back({ currentExtremePoint->x_, currentExtremePoint->y_ + 2 * itBox->y_, currentExtremePoint->z_ });
+	listOfExtremePoints.push_back({ currentExtremePoint->x_, currentExtremePoint->y_,currentExtremePoint->z_ + 2 * itBox->z_ });
 }
 
 int main()
