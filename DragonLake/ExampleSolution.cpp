@@ -215,6 +215,7 @@ public:
 	float CalculateWeightOfBoxes(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
 	float CalculateWeightOfFuel(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
 	float GetCurrentFreeWeight(NewRoute firstRoute, NewRoute secondRoute);
+	float GetCurrentWeight(NewRoute firstRoute, NewRoute secondRoute);
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
     bool AreEndOrStartPoints(std::pair<size_t, size_t> pairOfPointer);
     bool ArePointsInOneClass(std::pair<size_t, size_t> pairOfPointer);
@@ -234,19 +235,22 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
     json j = json::parse(i, nullptr, false);
 
     LoadInformationFromJson(j);
-    CreateMatrixForAlgorithm();
-    LoadInformationAboutSimpleRoutes();
-	LoadFirstInformationAboutNewRoutes();
-    FindShortestRoutes();
-    /*
-    while(!boxes_.empty())
-    {
-    
-        shortestRoutes = FindShortestRoutes(targetPoints_);
-        DeliverBoxes(shortestRoutes);  // return string about shippedBoxes
-                                // like
-    }
-    */
+  
+
+	do
+	{
+		CreateMatrixForAlgorithm();
+		LoadInformationAboutSimpleRoutes();
+		LoadFirstInformationAboutNewRoutes();
+
+		FindShortestRoutes();
+		//WriteInFile
+		//change targetPoints and reserveBoxes;
+		// boxes = reserveBoxes
+		//
+		//DeleteBox()
+		//deleteTargetOfPoints()
+	} while (false); // while(boxes.size())
 
     json j_out;
     j_out["steps"] = json::array();
@@ -330,11 +334,28 @@ void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
 void IvannaBaglayPathFinder::LoadFirstInformationAboutNewRoutes()
 {
 	float way = 0;
+	float weightOfFuel;
+	float weightOfBoxes = 0;
+	std::vector<box> listOfBox = {};
 	auto matrixPtr = matrixOfKilometerBetweenPoints_.get_matrix_ptr();
 	for (size_t i = 0; i < listOfSimpleRoutes_.size(); i++)
 	{
 		way = 2 * (*(*matrixPtr)[i])[0];
-		listOfNewRoutes_.push_back(NewRoute({i}, way, CalculateWeightOfBoxes(listOfSimpleRoutes_[i].boxes_), listOfSimpleRoutes_[i].boxes_, way * myship_.resourcesConsumption_, LoadBoxes(listOfSimpleRoutes_[i].boxes_)));
+		weightOfFuel = way * myship_.resourcesConsumption_;
+		//calculate weight
+		int j = 0;
+		weightOfBoxes = 0;
+		listOfBox.clear();
+		if (listOfSimpleRoutes_[i].boxes_.size())
+		{
+			while (j < listOfSimpleRoutes_[i].boxes_.size() && weightOfBoxes + listOfSimpleRoutes_[i].boxes_[j].weight_ < myship_.maxCarryingWeight_ - weightOfFuel)
+			{
+				weightOfBoxes += listOfSimpleRoutes_[i].boxes_[j].weight_;
+				listOfBox.push_back(listOfSimpleRoutes_[i].boxes_[j]);
+				j++;
+			}	
+		}
+		listOfNewRoutes_.push_back(NewRoute({i}, way, weightOfBoxes, listOfBox, weightOfFuel, LoadBoxes(listOfBox)));
 	}
 }
 
@@ -393,7 +414,7 @@ bool IvannaBaglayPathFinder::HaveEnoughResources(std::pair<std::vector<NewRoute>
 {
     
 	float newRoute = CalculateNewWay(pairOfRoute, pairOfPointer);
-    return ((newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) && (newRoute < GetCurrentFreeWeight(*pairOfRoute.first, *pairOfRoute.second) / myship_.resourcesConsumption_)) ? true : false;
+    return ((newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) && (newRoute*myship_.resourcesConsumption_ < GetCurrentFreeWeight(*pairOfRoute.first, *pairOfRoute.second))) ? true : false;
 }
 
 std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> IvannaBaglayPathFinder::FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPointer)
@@ -499,7 +520,7 @@ bool IvannaBaglayPathFinder::CanBePacked(std::pair<std::vector<NewRoute>::const_
 
 bool IvannaBaglayPathFinder::IsOverload(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute)
 {
-	return (myship_.maxCarryingWeight_ < GetCurrentFreeWeight(*pairOfRoute.first, *pairOfRoute.second));
+	return (myship_.maxCarryingWeight_ < GetCurrentWeight(*pairOfRoute.first, *pairOfRoute.second));
 }
 bool IvannaBaglayPathFinder::CanBoxesBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute)
 {
@@ -528,6 +549,11 @@ float IvannaBaglayPathFinder::CalculateWeightOfFuel(std::pair<std::vector<NewRou
 float IvannaBaglayPathFinder::GetCurrentFreeWeight(NewRoute firstRoute, NewRoute secondRoute)
 {
 	return myship_.maxCarryingWeight_ - (firstRoute.weightOfFuel_ + firstRoute.weightOfShip_ + secondRoute.weightOfFuel_ + secondRoute.weightOfShip_);
+}
+
+float IvannaBaglayPathFinder::GetCurrentWeight(NewRoute firstRoute, NewRoute secondRoute)
+{
+	return firstRoute.weightOfFuel_ + firstRoute.weightOfShip_ + secondRoute.weightOfFuel_ + secondRoute.weightOfShip_;
 }
 
 std::vector<ExtremePoint> IvannaBaglayPathFinder::LoadBoxes(std::vector<box> boxForRoute)
