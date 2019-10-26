@@ -477,6 +477,9 @@ bool IvannaBaglayPathFinder::IsOverload(std::pair<std::vector<NewRoute>::const_i
 }
 bool IvannaBaglayPathFinder::CanBoxesBePacked(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute)
 {
+	// returning vector (with box and where is in base)
+	// return true if size of vectorPackingBoxes == CalcilateNewBoxInRoute.size();
+	// PackeBox() // Algorithm
 	// ????????????????????
 	return true;
 }
