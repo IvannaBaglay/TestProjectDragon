@@ -590,13 +590,18 @@ bool IvannaBaglayPathFinder::IsOverlayWithOthersBoxes(std::vector<ExtremePoint>&
 {
 	for (auto itExtremePoint = listOfExtremePoints.cbegin(); itExtremePoint != listOfExtremePoints.cend(); itExtremePoint++)
 	{
-		if (itExtremePoint->isFree_ && itExtremePoint != currentExtremePoint)
+		if (!itExtremePoint->isFree_)
 		{
-			if (currentExtremePoint->x_ + 2 * itBox->x_ >= itExtremePoint->x_ ||
-				currentExtremePoint->y_ + 2 * itBox->y_ >= itExtremePoint->y_ ||
-				currentExtremePoint->z_ + 2 * itBox->z_ >= itExtremePoint->z_)
+			if (currentExtremePoint->x_ <= itExtremePoint->x_ &&
+				currentExtremePoint->y_  <= itExtremePoint->y_ &&
+				currentExtremePoint->z_  <= itExtremePoint->z_)
 			{
-				return true;
+				if (currentExtremePoint->x_ + 2 * itBox->x_ >= itExtremePoint->x_ ||
+					currentExtremePoint->y_ + 2 * itBox->y_ >= itExtremePoint->y_ ||
+					currentExtremePoint->z_ + 2 * itBox->z_ >= itExtremePoint->z_)
+				{
+					return true;
+				}
 			}
 		}
 	}
