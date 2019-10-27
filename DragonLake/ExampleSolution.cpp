@@ -368,7 +368,7 @@ void IvannaBaglayPathFinder::LoadFirstInformationAboutNewRoutes()
 		way = 2 * (*(*matrixPtr)[i])[0];
 		weightOfFuel = way * myship_.resourcesConsumption_;
 		//calculate weight
-		int j = 0;
+		size_t j = 0;
 		weightOfBoxes = 0;
 		listOfBox.clear();
 		if (listOfSimpleRoutes_[i].boxes_.size())
@@ -713,12 +713,9 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
     {
         json jShippedBoxes;
         json jBoxId;
-        json jShippedResources;
-        json jDestinationPointId;
         json jObject;
         for (auto itPoint = itRoute->pointsInRoute_.begin(); itPoint != itRoute->pointsInRoute_.end(); itPoint++)
-        {
-            //Load Information About Box in ship
+        {            
             jShippedBoxes["shippedBoxes"] = json::array();
             for (size_t i = 0; i < itRoute->listOfBoxCoordinates_.size(); i++)
             {
@@ -728,9 +725,7 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
                 jBoxId["z"] = itRoute->listOfBoxCoordinates_[i].z_;
                 jShippedBoxes["shippedBoxes"] += jBoxId;
             }
-            jObject = jShippedBoxes;
-            //
-            // Load Information About weight of fuel
+            jObject = jShippedBoxes;         
             if (itPoint == itRoute->pointsInRoute_.begin())
             {
                 jObject["shippedResources"] = itRoute->weightOfFuel_;
@@ -740,8 +735,6 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
                 jObject["shippedResources"] = 0;
             }
             jObject["destinationPointId"] = FindIndexOfPoint(*itPoint).second;
-           
-            // Delete Boxes of Ship for index
             DeleteBoxInShip(*itRoute, *itPoint);
             j_out["steps"] += jObject;
         }
