@@ -712,7 +712,6 @@ void IvannaBaglayPathFinder::Clear()
 
 void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,std::vector<NewRoute>& finalListOfNewRoutes)
 {
-	
     for (auto itRoute = finalListOfNewRoutes.begin(); itRoute != finalListOfNewRoutes.end(); itRoute++)
     {
         json jShippedBoxes;
@@ -769,7 +768,6 @@ void IvannaBaglayPathFinder::WriteNewRoutesInList(std::vector<NewRoute>& inListO
 void IvannaBaglayPathFinder::DeleteBoxInShip(NewRoute& Route, size_t point)
 {
     auto idPoint = FindIndexOfPoint(point);
-
     Route.listOfBoxCoordinates_.erase(std::remove_if(Route.listOfBoxCoordinates_.begin(), Route.listOfBoxCoordinates_.end(), [&](ExtremePoint b)
         {
             return b.target_ == idPoint.second;
@@ -804,6 +802,5 @@ int main()
     test3.FindSolution("inputData3.json", "outData3.json");
     test4.FindSolution("inputData4.json", "outData4.json");
     test5.FindSolution("inputData5.json", "outData5.json");
-   
     return 0;
 }
