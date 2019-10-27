@@ -223,6 +223,7 @@ public:
 	void WriteinformationInJson(const char* inputJasonFile,std::vector<NewRoute>& finalListOfNewRoutes);
     void DeleteBoxInShip(NewRoute& finalListOfNewRoutes, size_t point);
     void LoadInformationAboutIndexIntoIdPoint();
+    void AddZeroPoint(std::vector<NewRoute>& list);
     std::pair<size_t, int> FindIndexOfPoint(size_t point);
 	json ReadJsonFile(const char* inputJasonFile);
 	std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
@@ -255,10 +256,10 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
     std::vector<NewRoute> finalListOfNewRoutes;
 	json j = ReadJsonFile(inputJasonFile);
     LoadInformationFromJson(j);
+    LoadInformationAboutIndexIntoIdPoint();
 	do
 	{
-		CreateMatrixForAlgorithm();
-        LoadInformationAboutIndexIntoIdPoint();
+		CreateMatrixForAlgorithm();       
 		LoadInformationAboutSimpleRoutes();
 		LoadFirstInformationAboutNewRoutes();
 		FindShortestRoutes();        
@@ -267,6 +268,7 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 		DeleteTargetPoints();
 		Clear();
 	} while (!boxes_.empty()); 
+    AddZeroPoint(finalListOfNewRoutes);
     WriteinformationInJson(outputFileName, finalListOfNewRoutes);
 }
 
@@ -345,9 +347,12 @@ void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
 
 void IvannaBaglayPathFinder::LoadInformationAboutIndexIntoIdPoint()
 {
-    for (size_t i = 0; i < targetPoints_.size(); i++)
+    if (listOfIndexIntoIdPoint_.empty())
     {
-        listOfIndexIntoIdPoint_.push_back({i, targetPoints_[i].id_ });
+        for (size_t i = 0; i < targetPoints_.size(); i++)
+        {
+            listOfIndexIntoIdPoint_.push_back({ i, targetPoints_[i].id_ });
+        }
     }
 }
 
@@ -714,7 +719,7 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
         for (auto itPoint = itRoute->pointsInRoute_.begin(); itPoint != itRoute->pointsInRoute_.end(); itPoint++)
         {
             //Load Information About Box in ship
-
+            jShippedBoxes["shippedBoxes"] = json::array();
             for (size_t i = 0; i < itRoute->listOfBoxCoordinates_.size(); i++)
             {
                 jBoxId["BoxId"] = itRoute->listOfBoxCoordinates_[i].boxId_;
@@ -732,14 +737,15 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
             }
             else
             {
-                jObject["shippedResources"]  = 0;
+                jObject["shippedResources"] = 0;
             }
-            jObject["destinationPointId"]  = FindIndexOfPoint(*itPoint).second;
+            jObject["destinationPointId"] = FindIndexOfPoint(*itPoint).second;
            
             // Delete Boxes of Ship for index
             DeleteBoxInShip(*itRoute, *itPoint);
+            j_out["steps"] += jObject;
         }
-        j_out["steps"] += jObject;
+        
     }
 	std::ofstream o(outputFileName);
 	o << std::setw(4) << j_out << std::endl; //Write solution in file
@@ -754,17 +760,18 @@ json IvannaBaglayPathFinder::ReadJsonFile(const char* inputJasonFile)
 void IvannaBaglayPathFinder::WriteNewRoutesInList(std::vector<NewRoute>& inListOfNewRoutes, const std::vector<NewRoute>& fromListOfNewRoutes)
 {
     copy_if(fromListOfNewRoutes.begin(), fromListOfNewRoutes.end(), back_inserter(inListOfNewRoutes), [&](NewRoute route) { return !route.IsPointInRoute(0); });
-   
 }
+
+
 
 void IvannaBaglayPathFinder::DeleteBoxInShip(NewRoute& Route, size_t point)
 {
     auto idPoint = FindIndexOfPoint(point);
 
-    Route.boxesOfShip_.erase(std::remove_if(Route.boxesOfShip_.begin(), Route.boxesOfShip_.end(), [&](box b) 
+    Route.listOfBoxCoordinates_.erase(std::remove_if(Route.listOfBoxCoordinates_.begin(), Route.listOfBoxCoordinates_.end(), [&](ExtremePoint b)
         {
             return b.target_ == idPoint.second;
-        }), Route.boxesOfShip_.end());
+        }), Route.listOfBoxCoordinates_.end());
     
 }
 
@@ -776,17 +783,25 @@ std::pair<size_t, int> IvannaBaglayPathFinder::FindIndexOfPoint(size_t point)
         });
 }
 
+void IvannaBaglayPathFinder::AddZeroPoint(std::vector<NewRoute>& list)
+{
+    for (auto it = list.begin(); it != list.end(); it++)
+    {
+        it->pointsInRoute_.push_back(0);
+    }
+}
+
 int main()
 {
     IvannaBaglayPathFinder test1;
-	IvannaBaglayPathFinder test2;
-	IvannaBaglayPathFinder test3;
-	IvannaBaglayPathFinder test4;
-	IvannaBaglayPathFinder test5;
+    IvannaBaglayPathFinder test2;
+    IvannaBaglayPathFinder test3;
+    IvannaBaglayPathFinder test4;
+    IvannaBaglayPathFinder test5;
     test1.FindSolution("inputData1.json", "outData1.json");
-	test2.FindSolution("inputData2.json", "outData1.json");
-	test3.FindSolution("inputData3.json", "outData1.json");
-	test4.FindSolution("inputData4.json", "outData1.json");
-	test5.FindSolution("inputData5.json", "outData1.json");
+    test3.FindSolution("inputData3.json", "outData3.json");
+    test4.FindSolution("inputData4.json", "outData4.json");
+    test5.FindSolution("inputData5.json", "outData5.json");
+   
     return 0;
 }
