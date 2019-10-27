@@ -78,7 +78,7 @@ struct SimpleRoute
         pointsInSimpleRoute_(i), boxes_(boxes), pointIdInFileJson_(targetPoints.id_), isEndOrStartPointInRoute_(true) {}
 
     size_t pointsInSimpleRoute_;
-    int pointIdInFileJson_;
+    size_t pointIdInFileJson_;
     bool isEndOrStartPointInRoute_;
     std::vector<box> boxes_;
 };
@@ -195,6 +195,7 @@ private:
 	std::vector<NewRoute> listOfNewRoutes_;
 	std::vector<box> boxes_;
 	std::vector<targetPoint> targetPoints_;
+    std::vector<std::pair<size_t, int>> listOfIndexIntoIdPoint_;
 	ship myship_;
     Matrix matrixOfKilometerBetweenPoints_;
     Matrix matrixOfKilometerGrowth_;
@@ -219,7 +220,10 @@ public:
 	void DeleteFreeExtremePoint(std::vector<ExtremePoint>& listOfExtremePoints);
 	void Clear();
     void WriteNewRoutesInList(std::vector<NewRoute>& inListOfNewRoutes, const std::vector<NewRoute>& fromListOfNewRoutes);
-	void WriteinformationInJson(const char* inputJasonFile,const std::vector<NewRoute>& finalListOfNewRoutes);
+	void WriteinformationInJson(const char* inputJasonFile,std::vector<NewRoute>& finalListOfNewRoutes);
+    void DeleteBoxInShip(NewRoute& finalListOfNewRoutes, size_t point);
+    void LoadInformationAboutIndexIntoIdPoint();
+    std::pair<size_t, int> FindIndexOfPoint(size_t point);
 	json ReadJsonFile(const char* inputJasonFile);
 	std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPoints);
@@ -254,6 +258,7 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 	do
 	{
 		CreateMatrixForAlgorithm();
+        LoadInformationAboutIndexIntoIdPoint();
 		LoadInformationAboutSimpleRoutes();
 		LoadFirstInformationAboutNewRoutes();
 		FindShortestRoutes();        
@@ -335,6 +340,14 @@ void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
         copy_if(boxes_.begin(), boxes_.end(), back_inserter(boxesForCurrentPoint), [currentPoint](box b) { return b.target_ == currentPoint; });
         listOfSimpleRoutes_.push_back(SimpleRoute(i, boxesForCurrentPoint, targetPoints_[i]));
         boxesForCurrentPoint.clear();
+    }
+}
+
+void IvannaBaglayPathFinder::LoadInformationAboutIndexIntoIdPoint()
+{
+    for (size_t i = 0; i < targetPoints_.size(); i++)
+    {
+        listOfIndexIntoIdPoint_.push_back({i, targetPoints_[i].id_ });
     }
 }
 
@@ -688,7 +701,7 @@ void IvannaBaglayPathFinder::Clear()
 	listOfSimpleRoutes_.shrink_to_fit();
 }
 
-void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,const std::vector<NewRoute>& finalListOfNewRoutes)
+void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,std::vector<NewRoute>& finalListOfNewRoutes)
 {
 	json j_out;
     for (auto itRoute = finalListOfNewRoutes.begin(); itRoute != finalListOfNewRoutes.end(); itRoute++)
@@ -721,9 +734,10 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,c
             {
                 jObject["shippedResources"]  = 0;
             }
-            jObject["destinationPointId"]  = *itPoint;
+            jObject["destinationPointId"]  = FindIndexOfPoint(*itPoint).second;
            
             // Delete Boxes of Ship for index
+            DeleteBoxInShip(*itRoute, *itPoint);
         }
         j_out["steps"] += jObject;
     }
@@ -741,6 +755,25 @@ void IvannaBaglayPathFinder::WriteNewRoutesInList(std::vector<NewRoute>& inListO
 {
     copy_if(fromListOfNewRoutes.begin(), fromListOfNewRoutes.end(), back_inserter(inListOfNewRoutes), [&](NewRoute route) { return !route.IsPointInRoute(0); });
    
+}
+
+void IvannaBaglayPathFinder::DeleteBoxInShip(NewRoute& Route, size_t point)
+{
+    auto idPoint = FindIndexOfPoint(point);
+
+    Route.boxesOfShip_.erase(std::remove_if(Route.boxesOfShip_.begin(), Route.boxesOfShip_.end(), [&](box b) 
+        {
+            return b.target_ == idPoint.second;
+        }), Route.boxesOfShip_.end());
+    
+}
+
+std::pair<size_t, int> IvannaBaglayPathFinder::FindIndexOfPoint(size_t point)
+{
+    return *std::find_if(listOfIndexIntoIdPoint_.begin(), listOfIndexIntoIdPoint_.end(), [&](std::pair<size_t, int> pair)
+        {
+            return pair.first == point;
+        });
 }
 
 int main()
