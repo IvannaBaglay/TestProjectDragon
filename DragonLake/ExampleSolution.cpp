@@ -218,7 +218,8 @@ public:
 	void LoadNewExtremePoints(std::vector<ExtremePoint>& listOfExtremePoints, std::vector<ExtremePoint>::iterator currentExtremePoint, std::vector<box>::const_iterator itBox);
 	void DeleteFreeExtremePoint(std::vector<ExtremePoint>& listOfExtremePoints);
 	void Clear();
-	void WriteinformationInJson(const char* inputJasonFile);
+    void WriteNewRoutesInList(std::vector<NewRoute>& inListOfNewRoutes, const std::vector<NewRoute>& fromListOfNewRoutes);
+	void WriteinformationInJson(const char* inputJasonFile,const std::vector<NewRoute>& finalListOfNewRoutes);
 	json ReadJsonFile(const char* inputJasonFile);
 	std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPoints);
@@ -247,6 +248,7 @@ public:
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
 {
+    std::vector<NewRoute> finalListOfNewRoutes;
 	json j = ReadJsonFile(inputJasonFile);
     LoadInformationFromJson(j);
 	do
@@ -254,13 +256,13 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 		CreateMatrixForAlgorithm();
 		LoadInformationAboutSimpleRoutes();
 		LoadFirstInformationAboutNewRoutes();
-		FindShortestRoutes();
-		WriteinformationInJson(outputFileName);
+		FindShortestRoutes();        
+        WriteNewRoutesInList(finalListOfNewRoutes, listOfNewRoutes_);
 		DeleteBox();
 		DeleteTargetPoints();
 		Clear();
 	} while (!boxes_.empty()); 
-    
+    WriteinformationInJson(outputFileName, finalListOfNewRoutes);
 }
 
 void IvannaBaglayPathFinder::LoadInformationFromJson(json& j)
@@ -686,10 +688,45 @@ void IvannaBaglayPathFinder::Clear()
 	listOfSimpleRoutes_.shrink_to_fit();
 }
 
-void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName)
+void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,const std::vector<NewRoute>& finalListOfNewRoutes)
 {
 	json j_out;
-	j_out["steps"] = json::array();
+    for (auto itRoute = finalListOfNewRoutes.begin(); itRoute != finalListOfNewRoutes.end(); itRoute++)
+    {
+        json jShippedBoxes;
+        json jBoxId;
+        json jShippedResources;
+        json jDestinationPointId;
+        json jObject;
+        for (auto itPoint = itRoute->pointsInRoute_.begin(); itPoint != itRoute->pointsInRoute_.end(); itPoint++)
+        {
+            //Load Information About Box in ship
+
+            for (size_t i = 0; i < itRoute->listOfBoxCoordinates_.size(); i++)
+            {
+                jBoxId["BoxId"] = itRoute->listOfBoxCoordinates_[i].boxId_;
+                jBoxId["x"] = itRoute->listOfBoxCoordinates_[i].x_;
+                jBoxId["y"] = itRoute->listOfBoxCoordinates_[i].y_;
+                jBoxId["z"] = itRoute->listOfBoxCoordinates_[i].z_;
+                jShippedBoxes["shippedBoxes"] += jBoxId;
+            }
+            jObject = jShippedBoxes;
+            //
+            // Load Information About weight of fuel
+            if (itPoint == itRoute->pointsInRoute_.begin())
+            {
+                jObject["shippedResources"] = itRoute->weightOfFuel_;
+            }
+            else
+            {
+                jObject["shippedResources"]  = 0;
+            }
+            jObject["destinationPointId"]  = *itPoint;
+           
+            // Delete Boxes of Ship for index
+        }
+        j_out["steps"] += jObject;
+    }
 	std::ofstream o(outputFileName);
 	o << std::setw(4) << j_out << std::endl; //Write solution in file
 }
@@ -698,6 +735,12 @@ json IvannaBaglayPathFinder::ReadJsonFile(const char* inputJasonFile)
 {
 	std::ifstream i(inputJasonFile);
 	return json::parse(i, nullptr, false);
+}
+
+void IvannaBaglayPathFinder::WriteNewRoutesInList(std::vector<NewRoute>& inListOfNewRoutes, const std::vector<NewRoute>& fromListOfNewRoutes)
+{
+    copy_if(fromListOfNewRoutes.begin(), fromListOfNewRoutes.end(), back_inserter(inListOfNewRoutes), [&](NewRoute route) { return !route.IsPointInRoute(0); });
+   
 }
 
 int main()
