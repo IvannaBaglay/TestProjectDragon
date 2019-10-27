@@ -17,7 +17,7 @@ typedef std::vector <std::unique_ptr<std::vector<float>>> ptr_to_matrix;
 
 struct ExtremePoint
 {
-	ExtremePoint(int x, int y, int z, int boxId = 0, bool isFree = true, int target = 0) :
+	ExtremePoint(int x = 0, int y = 0, int z = 0, int boxId = 0, bool isFree = true, int target = 0) :
 		x_(x), y_(y), z_(z), boxId_(boxId), isFree_(isFree), target_(target) {}
 
 	int x_;
@@ -460,7 +460,6 @@ std::vector<NewRoute>::const_iterator IvannaBaglayPathFinder::FindIteratorOfNewR
 
 void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPoints)
 {
-	//????????? ????? ?? ??????????? ??????? ? 0 
     auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPoints);
 	std::deque<size_t> OrderPointsInNewWay = CreateNewRoute(pairOfNewRoute, pairOfPoints);
 	std::vector<box> boxes = CalculateNewListOfBox(pairOfNewRoute);
@@ -741,7 +740,7 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
         
     }
 	std::ofstream o(outputFileName);
-	o << std::setw(4) << j_out << std::endl; //Write solution in file
+	o << std::setw(4) << j_out << std::endl;
 }
 
 json IvannaBaglayPathFinder::ReadJsonFile(const char* inputJasonFile)
@@ -781,6 +780,7 @@ void IvannaBaglayPathFinder::AddZeroPoint(std::vector<NewRoute>& list)
     for (auto it = list.begin(); it != list.end(); it++)
     {
         it->pointsInRoute_.push_back(0);
+        it->listOfBoxCoordinates_.push_back({});
     }
 }
 
