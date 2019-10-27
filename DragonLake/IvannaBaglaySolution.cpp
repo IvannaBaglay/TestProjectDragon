@@ -254,20 +254,23 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
     std::vector<NewRoute> finalListOfNewRoutes;
 	json j = ReadJsonFile(inputJasonFile);
     LoadInformationFromJson(j);
-    LoadInformationAboutIndexIntoIdPoint();
+    
 	do
 	{
 		CreateMatrixForAlgorithm();       
 		LoadInformationAboutSimpleRoutes();
 		LoadFirstInformationAboutNewRoutes();
+        LoadInformationAboutIndexIntoIdPoint();
 		FindShortestRoutes();        
         WriteNewRoutesInList(finalListOfNewRoutes, listOfNewRoutes_);
+        AddZeroPoint(finalListOfNewRoutes);
+        WriteinformationInJson(outputFileName, finalListOfNewRoutes);
 		DeleteBox();
 		DeleteTargetPoints();
 		Clear();
+        finalListOfNewRoutes.clear();
 	} while (!boxes_.empty()); 
-    AddZeroPoint(finalListOfNewRoutes);
-    WriteinformationInJson(outputFileName, finalListOfNewRoutes);
+    
 }
 
 void IvannaBaglayPathFinder::LoadInformationFromJson(json& j)
@@ -345,13 +348,10 @@ void IvannaBaglayPathFinder::LoadInformationAboutSimpleRoutes()
 
 void IvannaBaglayPathFinder::LoadInformationAboutIndexIntoIdPoint()
 {
-    if (listOfIndexIntoIdPoint_.empty())
+    for (size_t i = 0; i < targetPoints_.size(); i++)
     {
-        for (size_t i = 0; i < targetPoints_.size(); i++)
-        {
-            listOfIndexIntoIdPoint_.push_back({ i, targetPoints_[i].id_ });
-        }
-    }
+        listOfIndexIntoIdPoint_.push_back({ i, targetPoints_[i].id_ });
+    } 
 }
 
 void IvannaBaglayPathFinder::LoadFirstInformationAboutNewRoutes()
@@ -706,11 +706,12 @@ void IvannaBaglayPathFinder::Clear()
 	listOfNewRoutes_.shrink_to_fit();
 	listOfSimpleRoutes_.clear();
 	listOfSimpleRoutes_.shrink_to_fit();
+    listOfIndexIntoIdPoint_.clear();
 }
 
 void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,std::vector<NewRoute>& finalListOfNewRoutes)
 {
-	json j_out;
+	static json j_out;
     for (auto itRoute = finalListOfNewRoutes.begin(); itRoute != finalListOfNewRoutes.end(); itRoute++)
     {
         json jShippedBoxes;
@@ -798,7 +799,7 @@ int main()
     IvannaBaglayPathFinder test3;
     IvannaBaglayPathFinder test4;
     IvannaBaglayPathFinder test5;
-    test1.FindSolution("inputData1.json", "outData1.json");
+    //test1.FindSolution("inputData1.json", "outData1.json");
     test3.FindSolution("inputData3.json", "outData3.json");
     test4.FindSolution("inputData4.json", "outData4.json");
     test5.FindSolution("inputData5.json", "outData5.json");
