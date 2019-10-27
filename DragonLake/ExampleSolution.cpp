@@ -86,14 +86,14 @@ struct SimpleRoute
 struct NewRoute
 {
 	NewRoute(std::deque<size_t> route, float way, float weightOfShip = 0, std::vector<box> boxes = {}, float weightOfFuel = 0, std::vector<ExtremePoint> listOfExtremePoints = {}) :
-        pointsInRoute_(route), way_(way), weightOfShip_(weightOfShip), boxesOfShip_(boxes), weightOfFuel_(weightOfFuel), listOfExtremePoints_(listOfExtremePoints) {}
+        pointsInRoute_(route), way_(way), weightOfShip_(weightOfShip), boxesOfShip_(boxes), weightOfFuel_(weightOfFuel), listOfBoxCoordinates_(listOfExtremePoints) {}
 
     std::deque<size_t> pointsInRoute_;
     float way_;
     float weightOfShip_;
 	float weightOfFuel_;
     std::vector<box> boxesOfShip_;
-	std::vector<ExtremePoint> listOfExtremePoints_;
+	std::vector<ExtremePoint> listOfBoxCoordinates_;
 
     bool ArePairOfPointsInRoute(std::pair<size_t, size_t> pairOfPoint)
     {
@@ -198,6 +198,7 @@ public:
     void LoadInformationAboutSimpleRoutes();
 	void LoadFirstInformationAboutNewRoutes();
     void FindShortestRoutes();
+	void DeleteBox();
 	void UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer);
 	void ChangeInformationAboutSimpleWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
 	void LoadNewExtremePoints(std::vector<ExtremePoint>& listOfExtremePoints, std::vector<ExtremePoint>::iterator currentExtremePoint, std::vector<box>::const_iterator itBox);
@@ -639,6 +640,22 @@ bool IvannaBaglayPathFinder::IsOverlayWithOthersBoxes(std::vector<ExtremePoint>&
 void IvannaBaglayPathFinder::DeleteFreeExtremePoint(std::vector<ExtremePoint>& listOfExtremePoints)
 {
 	listOfExtremePoints.erase(std::remove_if(listOfExtremePoints.begin(), listOfExtremePoints.end(), [](ExtremePoint extremePoint) {return extremePoint.isFree_; }), listOfExtremePoints.end());
+}
+
+void IvannaBaglayPathFinder::DeleteBox()
+{
+	for (auto it = listOfNewRoutes_.begin(); it != listOfNewRoutes_.end(); it++)
+	{
+		boxes_.erase(std::remove_if(boxes_.begin(), boxes_.end(), [&](box boxInBoxes)
+			{
+				return ((*it).boxesOfShip_.end() == std::find_if((*it).boxesOfShip_.begin(), (*it).boxesOfShip_.end(), [&](box boxInNewRoute)
+					{
+						return boxInBoxes.id_ == boxInNewRoute.id_;
+					})
+					) ? true : false;
+			}
+		), boxes_.end());
+	}
 }
 
 int main()
