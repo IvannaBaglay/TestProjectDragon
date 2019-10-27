@@ -373,7 +373,7 @@ std::pair<size_t, size_t> IvannaBaglayPathFinder::FindMaxFromMatrixKilometerGrow
     auto matrixPtr = matrixOfKilometerGrowth_.get_matrix_ptr();
     for (size_t i = 0; i < rowMatrix ; i++)
     {
-        for (size_t j = 0; j < i; j++)
+        for (size_t j = 1; j < i; j++)
         {
             if ((*(*matrixPtr)[i])[j] > maxValue)
             {
@@ -440,6 +440,7 @@ std::vector<NewRoute>::const_iterator IvannaBaglayPathFinder::FindIteratorOfNewR
 
 void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPoints)
 {
+	//????????? ????? ?? ??????????? ??????? ? 0 
     auto pairOfNewRoute = FindPointsInNewRoutes(pairOfPoints);
 	std::deque<size_t> OrderPointsInNewWay = CreateNewRoute(pairOfNewRoute, pairOfPoints);
 	std::vector<box> boxes = CalculateNewListOfBox(pairOfNewRoute);
