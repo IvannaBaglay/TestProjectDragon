@@ -158,8 +158,10 @@ public:
 		for (size_t i = 0; i < row_; i++)
 		{
 			(*matrixPtr_)[i]->clear();
+			(*matrixPtr_)[i]->shrink_to_fit();
 		}
 		matrixPtr_->clear();
+		matrixPtr_->shrink_to_fit();
 		sizeMatrix_ = 0;
 		row_ = 0;
 	}
@@ -216,18 +218,19 @@ public:
 	void LoadNewExtremePoints(std::vector<ExtremePoint>& listOfExtremePoints, std::vector<ExtremePoint>::iterator currentExtremePoint, std::vector<box>::const_iterator itBox);
 	void DeleteFreeExtremePoint(std::vector<ExtremePoint>& listOfExtremePoints);
 	void Clear();
+	void WriteinformationInJson(const char* inputJasonFile);
+	json ReadJsonFile(const char* inputJasonFile);
 	std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPoints);
 	std::vector<NewRoute>::const_iterator FindIteratorOfNewRoute(size_t point);
 	std::deque<size_t> CreateNewRoute(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
 	std::vector<box> CalculateNewListOfBox(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
-	std::vector<ExtremePoint> LoadBoxes(std::vector<box> BoxForRoute);
-	
+	std::vector<ExtremePoint> LoadBoxes(std::vector<box> BoxForRoute);	
 	std::vector<ExtremePoint>::iterator LoadOneBox(std::vector<ExtremePoint>& listOfExtremePoints, std::vector<box>::const_iterator itBox);
 	float CalculateNewWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
 	float CalculateWeightOfBoxes(std::vector<box> boxes);
 	float CalculateWeightOfBoxes(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
-	float CalculateWeightOfFuel(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute);
+	float CalculateWeightOfFuel(float newRoute);
 	float GetCurrentFreeWeight(NewRoute firstRoute, NewRoute secondRoute);
 	float GetCurrentWeight(NewRoute firstRoute, NewRoute secondRoute);
     bool AreAllConditionTrue(std::pair<size_t, size_t> pairOfPointer);
@@ -244,9 +247,7 @@ public:
 
 void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char* outputFileName)
 {
-    std::vector<targetPoint> shortestRoutes;
-	std::ifstream i(inputJasonFile);
-    json j = json::parse(i, nullptr, false);
+	json j = ReadJsonFile(inputJasonFile);
     LoadInformationFromJson(j);
 	do
 	{
@@ -254,15 +255,12 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 		LoadInformationAboutSimpleRoutes();
 		LoadFirstInformationAboutNewRoutes();
 		FindShortestRoutes();
-		//WriteinformationInJson;
+		WriteinformationInJson(outputFileName);
 		DeleteBox();
 		DeleteTargetPoints();
 		Clear();
-	} while (boxes_.empty()); 
-    json j_out;
-    j_out["steps"] = json::array();
-	std::ofstream o(outputFileName);
-	o << std::setw(4) << j_out << std::endl; //Write solution in file
+	} while (!boxes_.empty()); 
+    
 }
 
 void IvannaBaglayPathFinder::LoadInformationFromJson(json& j)
@@ -419,7 +417,6 @@ bool IvannaBaglayPathFinder::ArePointsInOneClass(std::pair<size_t, size_t> pairO
 
 bool IvannaBaglayPathFinder::HaveEnoughResources(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfRoute, std::pair<size_t, size_t> pairOfPointer)
 {
-    
 	float newRoute = CalculateNewWay(pairOfRoute, pairOfPointer);
     return ((newRoute < myship_.maxFuelWeight_ / myship_.resourcesConsumption_) && (newRoute*myship_.resourcesConsumption_ < GetCurrentFreeWeight(*pairOfRoute.first, *pairOfRoute.second))) ? true : false;
 }
@@ -448,7 +445,7 @@ void IvannaBaglayPathFinder::UniteSimpleRoute(std::pair<size_t, size_t> pairOfPo
 	std::vector<box> boxes = CalculateNewListOfBox(pairOfNewRoute);
 	float newWay = CalculateNewWay(pairOfNewRoute, pairOfPoints);
 	float newWeightofBoxes = CalculateWeightOfBoxes(pairOfNewRoute);
-	float newWeightOfFuel = CalculateWeightOfFuel(pairOfNewRoute);
+	float newWeightOfFuel = CalculateWeightOfFuel(newWay);
 	std::vector<ExtremePoint> listOfCoordinateOfBox = LoadBoxes(boxes);
 	ChangeInformationAboutSimpleWay(pairOfNewRoute, pairOfPoints);
 	listOfNewRoutes_.erase(FindIteratorOfNewRoute(pairOfPoints.first));
@@ -549,9 +546,9 @@ std::vector<box> IvannaBaglayPathFinder::CalculateNewListOfBox(std::pair<std::ve
 	boxes.insert(boxes.begin(), pairOfNewRoute.second->boxesOfShip_.begin(), pairOfNewRoute.second->boxesOfShip_.end());
 	return boxes;
 }
-float IvannaBaglayPathFinder::CalculateWeightOfFuel(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute)
+float IvannaBaglayPathFinder::CalculateWeightOfFuel(float newRoute)
 {
-	return pairOfNewRoute.first->weightOfFuel_ + pairOfNewRoute.second->weightOfFuel_;
+	return newRoute * myship_.resourcesConsumption_;
 }
 float IvannaBaglayPathFinder::GetCurrentFreeWeight(NewRoute firstRoute, NewRoute secondRoute)
 {
@@ -662,6 +659,7 @@ void IvannaBaglayPathFinder::DeleteBox()
 			}
 		), boxes_.end());
 	}
+	boxes_.shrink_to_fit();
 }
 
 void IvannaBaglayPathFinder::DeleteTargetPoints()
@@ -674,6 +672,7 @@ void IvannaBaglayPathFinder::DeleteTargetPoints()
 					})
 					) ? true : false;
 			}), targetPoints_.end());
+		targetPoints_.shrink_to_fit();
 }
 
 void IvannaBaglayPathFinder::Clear()
@@ -681,7 +680,23 @@ void IvannaBaglayPathFinder::Clear()
 	matrixOfKilometerBetweenPoints_.Clear();
 	matrixOfKilometerGrowth_.Clear();
 	listOfNewRoutes_.clear();
+	listOfNewRoutes_.shrink_to_fit();
 	listOfSimpleRoutes_.clear();
+	listOfSimpleRoutes_.shrink_to_fit();
+}
+
+void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName)
+{
+	json j_out;
+	j_out["steps"] = json::array();
+	std::ofstream o(outputFileName);
+	o << std::setw(4) << j_out << std::endl; //Write solution in file
+}
+
+json IvannaBaglayPathFinder::ReadJsonFile(const char* inputJasonFile)
+{
+	std::ifstream i(inputJasonFile);
+	return json::parse(i, nullptr, false);
 }
 
 int main()
