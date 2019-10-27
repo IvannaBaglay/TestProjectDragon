@@ -719,6 +719,14 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
         for (auto itPoint = itRoute->pointsInRoute_.begin(); itPoint != itRoute->pointsInRoute_.end(); itPoint++)
         {            
             jShippedBoxes["shippedBoxes"] = json::array();
+            if (itRoute->listOfBoxCoordinates_.empty())
+            {
+                jBoxId["BoxId"] = 0;
+                jBoxId["x"] = 0;
+                jBoxId["y"] = 0;
+                jBoxId["z"] = 0;
+                jShippedBoxes["shippedBoxes"] += jBoxId;
+            }
             for (size_t i = 0; i < itRoute->listOfBoxCoordinates_.size(); i++)
             {
                 jBoxId["BoxId"] = itRoute->listOfBoxCoordinates_[i].boxId_;
@@ -780,7 +788,6 @@ void IvannaBaglayPathFinder::AddZeroPoint(std::vector<NewRoute>& list)
     for (auto it = list.begin(); it != list.end(); it++)
     {
         it->pointsInRoute_.push_back(0);
-        it->listOfBoxCoordinates_.push_back({});
     }
 }
 
