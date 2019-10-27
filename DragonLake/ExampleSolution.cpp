@@ -199,6 +199,7 @@ public:
 	void LoadFirstInformationAboutNewRoutes();
     void FindShortestRoutes();
 	void DeleteBox();
+	void DeleteTargetOfPoints();
 	void UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer);
 	void ChangeInformationAboutSimpleWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
 	void LoadNewExtremePoints(std::vector<ExtremePoint>& listOfExtremePoints, std::vector<ExtremePoint>::iterator currentExtremePoint, std::vector<box>::const_iterator itBox);
@@ -249,8 +250,8 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
 		//change targetPoints and reserveBoxes;
 		// boxes = reserveBoxes
 		//
-		//DeleteBox()
-		//deleteTargetOfPoints()
+		DeleteBox();
+		DeleteTargetOfPoints();
 	} while (false); // while(boxes.size())
 
     json j_out;
@@ -648,7 +649,7 @@ void IvannaBaglayPathFinder::DeleteBox()
 	{
 		boxes_.erase(std::remove_if(boxes_.begin(), boxes_.end(), [&](box boxInBoxes)
 			{
-				return ((*it).boxesOfShip_.end() == std::find_if((*it).boxesOfShip_.begin(), (*it).boxesOfShip_.end(), [&](box boxInNewRoute)
+				return ((*it).boxesOfShip_.end() != std::find_if((*it).boxesOfShip_.begin(), (*it).boxesOfShip_.end(), [&](box boxInNewRoute)
 					{
 						return boxInBoxes.id_ == boxInNewRoute.id_;
 					})
@@ -656,6 +657,20 @@ void IvannaBaglayPathFinder::DeleteBox()
 			}
 		), boxes_.end());
 	}
+}
+
+void IvannaBaglayPathFinder::DeleteTargetOfPoints()
+{
+	
+		targetPoints_.erase(std::remove_if(targetPoints_.begin() + 1, targetPoints_.end(), [&](targetPoint point) 
+			{
+				return (boxes_.end() == std::find_if(boxes_.begin(), boxes_.end(), [&](box b)
+					{
+						return b.target_ == point.id_;
+					})
+					) ? true : false;
+			}), targetPoints_.end());
+	
 }
 
 int main()
