@@ -153,10 +153,21 @@ public:
         }
     }
 
-    const size_t get_row() const
-    {
-        return row_;
-    }
+	void Clear()
+	{
+		for (size_t i = 0; i < row_; i++)
+		{
+			(*matrixPtr_)[i]->clear();
+		}
+		matrixPtr_->clear();
+		sizeMatrix_ = 0;
+		row_ = 0;
+	}
+
+	const size_t get_row() const
+	{
+		return row_;
+	}
 
     const auto get_matrix_ptr() const
     {
@@ -199,11 +210,12 @@ public:
 	void LoadFirstInformationAboutNewRoutes();
     void FindShortestRoutes();
 	void DeleteBox();
-	void DeleteTargetOfPoints();
+	void DeleteTargetPoints();
 	void UniteSimpleRoute(std::pair<size_t, size_t> pairOfPointer);
 	void ChangeInformationAboutSimpleWay(std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> pairOfNewRoute, std::pair<size_t, size_t> pairOfPoints);
 	void LoadNewExtremePoints(std::vector<ExtremePoint>& listOfExtremePoints, std::vector<ExtremePoint>::iterator currentExtremePoint, std::vector<box>::const_iterator itBox);
 	void DeleteFreeExtremePoint(std::vector<ExtremePoint>& listOfExtremePoints);
+	void Clear();
 	std::pair<size_t, size_t> FindMaxFromMatrixKilometerGrowth();
     std::pair<std::vector<NewRoute>::const_iterator, std::vector<NewRoute>::const_iterator> FindPointsInNewRoutes(std::pair<size_t, size_t> pairOfPoints);
 	std::vector<NewRoute>::const_iterator FindIteratorOfNewRoute(size_t point);
@@ -235,25 +247,18 @@ void IvannaBaglayPathFinder::FindSolution(const char* inputJasonFile, const char
     std::vector<targetPoint> shortestRoutes;
 	std::ifstream i(inputJasonFile);
     json j = json::parse(i, nullptr, false);
-
     LoadInformationFromJson(j);
-  
-
 	do
 	{
 		CreateMatrixForAlgorithm();
 		LoadInformationAboutSimpleRoutes();
 		LoadFirstInformationAboutNewRoutes();
-
 		FindShortestRoutes();
-		//WriteInFile
-		//change targetPoints and reserveBoxes;
-		// boxes = reserveBoxes
-		//
+		//WriteinformationInJson;
 		DeleteBox();
-		DeleteTargetOfPoints();
-	} while (false); // while(boxes.size())
-
+		DeleteTargetPoints();
+		Clear();
+	} while (boxes_.empty()); 
     json j_out;
     j_out["steps"] = json::array();
 	std::ofstream o(outputFileName);
@@ -659,9 +664,8 @@ void IvannaBaglayPathFinder::DeleteBox()
 	}
 }
 
-void IvannaBaglayPathFinder::DeleteTargetOfPoints()
+void IvannaBaglayPathFinder::DeleteTargetPoints()
 {
-	
 		targetPoints_.erase(std::remove_if(targetPoints_.begin() + 1, targetPoints_.end(), [&](targetPoint point) 
 			{
 				return (boxes_.end() == std::find_if(boxes_.begin(), boxes_.end(), [&](box b)
@@ -670,7 +674,14 @@ void IvannaBaglayPathFinder::DeleteTargetOfPoints()
 					})
 					) ? true : false;
 			}), targetPoints_.end());
-	
+}
+
+void IvannaBaglayPathFinder::Clear()
+{
+	matrixOfKilometerBetweenPoints_.Clear();
+	matrixOfKilometerGrowth_.Clear();
+	listOfNewRoutes_.clear();
+	listOfSimpleRoutes_.clear();
 }
 
 int main()
