@@ -198,6 +198,7 @@ private:
 	ship myship_;
     Matrix matrixOfKilometerBetweenPoints_;
     Matrix matrixOfKilometerGrowth_;
+    json j_out_;
     
 public:
 	virtual void FindSolution(const char* inputJasonFile, const char* outputFileName);
@@ -711,7 +712,7 @@ void IvannaBaglayPathFinder::Clear()
 
 void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,std::vector<NewRoute>& finalListOfNewRoutes)
 {
-	static json j_out;
+	
     for (auto itRoute = finalListOfNewRoutes.begin(); itRoute != finalListOfNewRoutes.end(); itRoute++)
     {
         json jShippedBoxes;
@@ -747,11 +748,11 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
             }
             jObject["destinationPointId"] = FindIndexOfPoint(*itPoint).second;
             DeleteBoxInShip(*itRoute, *itPoint);
-            j_out["steps"] += jObject;
+            j_out_["steps"] += jObject;
         }        
     }
 	std::ofstream o(outputFileName);
-	o << std::setw(4) << j_out << std::endl;
+	o << std::setw(4) << j_out_ << std::endl;
 }
 
 json IvannaBaglayPathFinder::ReadJsonFile(const char* inputJasonFile)
@@ -799,7 +800,7 @@ int main()
     IvannaBaglayPathFinder test3;
     IvannaBaglayPathFinder test4;
     IvannaBaglayPathFinder test5;
-    //test1.FindSolution("inputData1.json", "outData1.json");
+    test1.FindSolution("inputData1.json", "outData1.json");
     test3.FindSolution("inputData3.json", "outData3.json");
     test4.FindSolution("inputData4.json", "outData4.json");
     test5.FindSolution("inputData5.json", "outData5.json");
