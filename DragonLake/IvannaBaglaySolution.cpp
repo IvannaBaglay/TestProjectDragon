@@ -736,8 +736,7 @@ void IvannaBaglayPathFinder::WriteinformationInJson(const char* outputFileName,s
             jObject["destinationPointId"] = FindIndexOfPoint(*itPoint).second;
             DeleteBoxInShip(*itRoute, *itPoint);
             j_out["steps"] += jObject;
-        }
-        
+        }        
     }
 	std::ofstream o(outputFileName);
 	o << std::setw(4) << j_out << std::endl;
